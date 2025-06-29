@@ -1,6 +1,162 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useStore, initializeTodayTasks } from '../stores/useStore';
 
+// 图片生成函数
+const generateReportImage = async (reportData: {
+  date: string;
+  completedTasks: number;
+  totalTasks: number;
+  completionRate: string;
+  totalStars: number;
+  categoryStats: {
+    study: number;
+    exercise: number;
+    behavior: number;
+    creativity: number;
+  };
+  motivationalText: string;
+}) => {
+  return new Promise<string>((resolve) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    if (!ctx) {
+      resolve('');
+      return;
+    }
+
+    // 设置画布尺寸 (适合手机分享的比例)
+    canvas.width = 800;
+    canvas.height = 1000;
+
+    // 渐变背景
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, '#FF69B4'); // 猪猪银行粉色
+    gradient.addColorStop(0.5, '#FFF8DC'); // 奶白色
+    gradient.addColorStop(1, '#87CEEB'); // 天蓝色
+    
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 绘制圆角矩形的辅助函数
+    const roundRect = (x: number, y: number, w: number, h: number, r: number) => {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    };
+
+    // 设置字体
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // 标题区域
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 60px Arial, sans-serif';
+    ctx.fillText('🐷 猪猪银行 🐷', canvas.width / 2, 80);
+    
+    ctx.font = 'bold 40px Arial, sans-serif';
+    ctx.fillText('每日表现报告', canvas.width / 2, 140);
+
+    // 日期
+    ctx.font = '32px Arial, sans-serif';
+    ctx.fillStyle = '#333333';
+    ctx.fillText(reportData.date, canvas.width / 2, 190);
+
+    // 主要数据区域背景
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    roundRect(50, 240, canvas.width - 100, 300, 20);
+    ctx.fill();
+
+    // 完成率大圆环
+    const centerX = canvas.width / 2;
+    const centerY = 390;
+    const radius = 80;
+    
+    // 背景圆环
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    ctx.strokeStyle = '#E0E0E0';
+    ctx.lineWidth = 15;
+    ctx.stroke();
+
+    // 进度圆环
+    const progressAngle = (Number(reportData.completionRate) / 100) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, -Math.PI / 2, -Math.PI / 2 + progressAngle);
+    ctx.strokeStyle = '#4CAF50';
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    // 完成率文字
+    ctx.fillStyle = '#333333';
+    ctx.font = 'bold 36px Arial, sans-serif';
+    ctx.fillText(`${reportData.completionRate}%`, centerX, centerY - 10);
+    ctx.font = '24px Arial, sans-serif';
+    ctx.fillText('完成率', centerX, centerY + 20);
+
+    // 任务统计
+    ctx.font = '28px Arial, sans-serif';
+    ctx.fillText(`完成任务：${reportData.completedTasks} / ${reportData.totalTasks}`, centerX, 480);
+    ctx.fillText(`获得星星：${reportData.totalStars} ⭐`, centerX, 520);
+
+    // 分类统计区域
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    roundRect(50, 580, canvas.width - 100, 280, 20);
+    ctx.fill();
+
+    ctx.fillStyle = '#333333';
+    ctx.font = 'bold 32px Arial, sans-serif';
+    ctx.fillText('分类完成情况', centerX, 620);
+
+    // 分类图标和数据
+    const categories = [
+      { icon: '📚', name: '学习', count: reportData.categoryStats.study, color: '#2196F3' },
+      { icon: '🏃', name: '运动', count: reportData.categoryStats.exercise, color: '#4CAF50' },
+      { icon: '😊', name: '行为', count: reportData.categoryStats.behavior, color: '#FF9800' },
+      { icon: '🎨', name: '创造', count: reportData.categoryStats.creativity, color: '#9C27B0' }
+    ];
+
+    ctx.textAlign = 'left';
+    categories.forEach((category, index) => {
+      const x = 100 + (index % 2) * 300;
+      const y = 680 + Math.floor(index / 2) * 80;
+      
+      // 分类图标
+      ctx.font = '36px Arial, sans-serif';
+      ctx.fillText(category.icon, x, y);
+      
+      // 分类名称和数量
+      ctx.font = '24px Arial, sans-serif';
+      ctx.fillStyle = category.color;
+      ctx.fillText(`${category.name}: ${category.count} 项`, x + 50, y);
+      ctx.fillStyle = '#333333';
+    });
+
+    // 激励文字区域
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    roundRect(50, 900, canvas.width - 100, 80, 20);
+    ctx.fill();
+
+    ctx.fillStyle = '#FF69B4';
+    ctx.font = 'bold 28px Arial, sans-serif';
+    ctx.fillText(reportData.motivationalText, centerX, 940);
+
+    // 水印
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.font = '20px Arial, sans-serif';
+    ctx.fillText('Generated by 猪猪银行 App', centerX, canvas.height - 30);
+
+    // 转换为 base64 图片
+    const imageDataUrl = canvas.toDataURL('image/png', 0.9);
+    resolve(imageDataUrl);
+  });
+};
+
 export const HomePage: React.FC = () => {
   const {
     totalStars,
@@ -22,6 +178,7 @@ export const HomePage: React.FC = () => {
   const [taskStars, setTaskStars] = useState(1);
   const [showReport, setShowReport] = useState(false);
   const [report, setReport] = useState('');
+  const [reportImage, setReportImage] = useState<string>(''); // 新增：报告图片
   const [isGenerating, setIsGenerating] = useState(false);
   const [celebrationVisible, setCelebrationVisible] = useState(false);
 
@@ -36,7 +193,7 @@ export const HomePage: React.FC = () => {
 
   // 使用 useCallback 确保每个任务有独立的处理函数
   const handleCompleteTask = useCallback((taskId: string) => {
-    console.log('完成任务:', taskId); // 调试日志
+    console.log('完成任务:', taskId);
     
     try {
       completeTask(taskId);
@@ -60,7 +217,7 @@ export const HomePage: React.FC = () => {
 
   // 使用 useCallback 确保每个任务有独立的恢复函数
   const handleUncompleteTask = useCallback((taskId: string) => {
-    console.log('恢复任务:', taskId); // 调试日志
+    console.log('恢复任务:', taskId);
     
     try {
       uncompleteTask(taskId);
@@ -87,15 +244,110 @@ export const HomePage: React.FC = () => {
     }
   };
 
+  // 更新后的生成报告函数
   const handleGenerateReport = async () => {
     setIsGenerating(true);
     
-    setTimeout(() => {
+    setTimeout(async () => {
       const newReport = generateDailyReport();
       setReport(newReport);
       setShowReport(true);
+      
+      // 生成图片数据
+      const today = new Date().toLocaleDateString('zh-CN', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+      const todayRecord = dailyRecords.find(r => r.date === new Date().toISOString().split('T')[0]);
+      
+      if (todayRecord) {
+        const completedTasks = todayRecord.tasks.filter(t => t.completed);
+        const totalTasks = todayRecord.tasks.length;
+        const completionRate = totalTasks > 0 ? (completedTasks.length / totalTasks * 100).toFixed(0) : '0';
+        
+        const categoryStats = {
+          study: completedTasks.filter(t => t.category === 'study').length,
+          exercise: completedTasks.filter(t => t.category === 'exercise').length,
+          behavior: completedTasks.filter(t => t.category === 'behavior').length,
+          creativity: completedTasks.filter(t => t.category === 'creativity').length
+        };
+
+        let motivationalText = '';
+        if (Number(completionRate) === 100) {
+          motivationalText = '🎉 太棒了！今天所有任务都完成了！';
+        } else if (Number(completionRate) >= 80) {
+          motivationalText = '💪 很不错！继续加油！';
+        } else if (Number(completionRate) >= 60) {
+          motivationalText = '😊 还可以，明天继续努力！';
+        } else {
+          motivationalText = '💡 加油！明天会更好的！';
+        }
+
+        try {
+          const imageUrl = await generateReportImage({
+            date: today,
+            completedTasks: completedTasks.length,
+            totalTasks: totalTasks,
+            completionRate: completionRate,
+            totalStars: todayRecord.totalStars,
+            categoryStats: categoryStats,
+            motivationalText: motivationalText
+          });
+          
+          setReportImage(imageUrl);
+        } catch (error) {
+          console.error('生成图片失败:', error);
+        }
+      }
+      
       setIsGenerating(false);
     }, 800);
+  };
+
+  // 分享图片函数
+  const shareReportImage = async () => {
+    if (!reportImage) return;
+
+    try {
+      // 将 base64 转换为 Blob
+      const response = await fetch(reportImage);
+      const blob = await response.blob();
+      const file = new File([blob], `猪猪银行-每日报告-${new Date().toLocaleDateString('zh-CN')}.png`, { 
+        type: 'image/png' 
+      });
+
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        // 使用原生分享 API
+        await navigator.share({
+          title: '猪猪银行 - 每日报告',
+          text: '看看我今天的表现吧！',
+          files: [file]
+        });
+      } else {
+        // 降级到下载
+        const link = document.createElement('a');
+        link.href = reportImage;
+        link.download = `猪猪银行-每日报告-${new Date().toLocaleDateString('zh-CN')}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } catch (error) {
+      console.error('分享失败:', error);
+      // 降级到复制图片到剪贴板
+      try {
+        const response = await fetch(reportImage);
+        const blob = await response.blob();
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': blob })
+        ]);
+        alert('图片已复制到剪贴板！');
+      } catch (clipboardError) {
+        console.error('复制到剪贴板失败:', clipboardError);
+        alert('分享功能暂不可用，请截图保存');
+      }
+    }
   };
 
   const getCategoryColor = (category: string) => {
@@ -464,6 +716,18 @@ export const HomePage: React.FC = () => {
                   </pre>
                 </div>
                 
+                {/* 图片预览 */}
+                {reportImage && (
+                  <div className="mt-4">
+                    <img 
+                      src={reportImage} 
+                      alt="每日报告图片" 
+                      className="w-full max-w-md mx-auto rounded-lg shadow-lg"
+                      style={{ maxHeight: '400px', objectFit: 'contain' }}
+                    />
+                  </div>
+                )}
+                
                 <div className="flex gap-2 mt-3">
                   <button
                     onClick={() => {
@@ -480,8 +744,19 @@ export const HomePage: React.FC = () => {
                     }}
                     className="flex-1 bg-piggy-green text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors text-sm transform hover:scale-105"
                   >
-                    📤 分享报告
+                    📤 分享文字
                   </button>
+                  
+                  {/* 新增：分享图片按钮 */}
+                  {reportImage && (
+                    <button
+                      onClick={shareReportImage}
+                      className="flex-1 bg-piggy-pink text-white px-4 py-2 rounded-lg hover:bg-pink-600 transition-colors text-sm transform hover:scale-105"
+                    >
+                      🖼️ 分享图片
+                    </button>
+                  )}
+                  
                   <button
                     onClick={() => setShowReport(false)}
                     className="px-4 py-2 text-piggy-blue hover:bg-blue-50 rounded-lg transition-colors text-sm"
