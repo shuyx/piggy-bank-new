@@ -37,6 +37,7 @@ interface AppState {
   // 操作方法
   addTask: (task: Omit<Task, 'id' | 'date'>) => void;
   completeTask: (taskId: string) => void;
+  uncompleteTask: (taskId: string) => void; // 新增：恢复任务
   addCustomTask: (name: string, category: Task['category'], stars: number) => void;
   generateDailyReport: () => string;
   unlockAchievement: (achievementId: string) => void;
@@ -93,6 +94,79 @@ const defaultTaskTemplates = [
   { name: '画画或手工', category: 'creativity' as const, stars: 2 }
 ];
 
+// 辅助函数：检查成就解锁条件
+const checkAchievements = (state: any, newTotalStars: number, todayTasks: Task[]) => {
+  const newAchievements = [...state.achievements];
+  let hasNewUnlock = false;
+
+  // 检查第一颗星星成就
+  if (newTotalStars >= 1 && !newAchievements.find(a => a.id === 'first-star')?.unlocked) {
+    const achievementIndex = newAchievements.findIndex(a => a.id === 'first-star');
+    newAchievements[achievementIndex] = {
+      ...newAchievements[achievementIndex],
+      unlocked: true,
+      unlockedDate: new Date().toISOString()
+    };
+    hasNewUnlock = true;
+  }
+
+  // 检查星星收集者成就
+  if (newTotalStars >= 100 && !newAchievements.find(a => a.id === 'star-collector')?.unlocked) {
+    const achievementIndex = newAchievements.findIndex(a => a.id === 'star-collector');
+    newAchievements[achievementIndex] = {
+      ...newAchievements[achievementIndex],
+      unlocked: true,
+      unlockedDate: new Date().toISOString()
+    };
+    hasNewUnlock = true;
+  }
+
+  // 检查完美一天成就
+  const completedTasksToday = todayTasks.filter(t => t.completed).length;
+  const totalTasksToday = todayTasks.length;
+  if (completedTasksToday === totalTasksToday && totalTasksToday > 0 &&
+      !newAchievements.find(a => a.id === 'perfect-day')?.unlocked) {
+    const achievementIndex = newAchievements.findIndex(a => a.id === 'perfect-day');
+    newAchievements[achievementIndex] = {
+      ...newAchievements[achievementIndex],
+      unlocked: true,
+      unlockedDate: new Date().toISOString()
+    };
+    hasNewUnlock = true;
+  }
+
+  return { newAchievements, hasNewUnlock };
+};
+
+// 辅助函数：计算连续天数
+const calculateStreak = (dailyRecords: DailyRecord[], currentStreak: number) => {
+  const today = new Date().toISOString().split('T')[0];
+  const todayRecord = dailyRecords.find(r => r.date === today);
+  
+  if (!todayRecord || todayRecord.tasks.filter(t => t.completed).length === 0) {
+    return 0;
+  }
+
+  let streak = 1;
+  const sortedRecords = dailyRecords
+    .filter(r => r.tasks.some(t => t.completed))
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  for (let i = 1; i < sortedRecords.length; i++) {
+    const prevDate = new Date(sortedRecords[i-1].date);
+    const currDate = new Date(sortedRecords[i].date);
+    const dayDiff = Math.floor((prevDate.getTime() - currDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (dayDiff === 1) {
+      streak++;
+    } else {
+      break;
+    }
+  }
+
+  return streak;
+};
+
 export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
@@ -138,9 +212,8 @@ export const useStore = create<AppState>()(
         set((state) => {
           const today = new Date().toISOString().split('T')[0];
           let starsEarned = 0;
-          let totalTasksToday = 0;
-          let completedTasksToday = 0;
 
+          // 更新任务状态
           const newDailyRecords = state.dailyRecords.map(record => {
             if (record.date === today) {
               const newTasks = record.tasks.map(task => {
@@ -151,8 +224,73 @@ export const useStore = create<AppState>()(
                 return task;
               });
 
-              totalTasksToday = newTasks.length;
-              completedTasksToday = newTasks.filter(t => t.completed).length;
+              return {
+                ...record,
+                tasks: newTasks,
+                totalStars: newTasks.filter(t => t.completed).reduce((sum, t) => sum + t.stars, 0)
+              };
+            }
+            return record;
+          });
+
+          // 更新总星星数
+          const newTotalStars = state.totalStars + starsEarned;
+
+          // 获取今日任务（更新后的）
+          const todayRecord = newDailyRecords.find(r => r.date === today);
+          const todayTasks = todayRecord?.tasks || [];
+
+          // 检查成就解锁
+          const { newAchievements } = checkAchievements(state, newTotalStars, todayTasks);
+
+          // 计算连续天数
+          const newStreak = calculateStreak(newDailyRecords, state.currentStreak);
+
+          // 检查连续天数成就
+          const finalAchievements = [...newAchievements];
+          if (newStreak >= 7 && !finalAchievements.find(a => a.id === 'week-warrior')?.unlocked) {
+            const achievementIndex = finalAchievements.findIndex(a => a.id === 'week-warrior');
+            finalAchievements[achievementIndex] = {
+              ...finalAchievements[achievementIndex],
+              unlocked: true,
+              unlockedDate: new Date().toISOString()
+            };
+          }
+
+          if (newStreak >= 30 && !finalAchievements.find(a => a.id === 'month-master')?.unlocked) {
+            const achievementIndex = finalAchievements.findIndex(a => a.id === 'month-master');
+            finalAchievements[achievementIndex] = {
+              ...finalAchievements[achievementIndex],
+              unlocked: true,
+              unlockedDate: new Date().toISOString()
+            };
+          }
+
+          return {
+            totalStars: newTotalStars,
+            currentStreak: newStreak,
+            dailyRecords: newDailyRecords,
+            achievements: finalAchievements
+          };
+        });
+      },
+
+      // 新增：恢复任务功能
+      uncompleteTask: (taskId) => {
+        set((state) => {
+          const today = new Date().toISOString().split('T')[0];
+          let starsLost = 0;
+
+          // 更新任务状态
+          const newDailyRecords = state.dailyRecords.map(record => {
+            if (record.date === today) {
+              const newTasks = record.tasks.map(task => {
+                if (task.id === taskId && task.completed) {
+                  starsLost = task.stars;
+                  return { ...task, completed: false };
+                }
+                return task;
+              });
 
               return {
                 ...record,
@@ -163,75 +301,20 @@ export const useStore = create<AppState>()(
             return record;
           });
 
-          const newTotalStars = state.totalStars + starsEarned;
-          const newAchievements = [...state.achievements];
+          // 更新总星星数
+          const newTotalStars = Math.max(0, state.totalStars - starsLost);
 
-          // 检查成就解锁
-          if (newTotalStars >= 1 && !newAchievements.find(a => a.id === 'first-star')?.unlocked) {
-            const achievementIndex = newAchievements.findIndex(a => a.id === 'first-star');
-            newAchievements[achievementIndex] = {
-              ...newAchievements[achievementIndex],
-              unlocked: true,
-              unlockedDate: new Date().toISOString()
-            };
-          }
+          // 重新计算连续天数
+          const newStreak = calculateStreak(newDailyRecords, state.currentStreak);
 
-          if (newTotalStars >= 100 && !newAchievements.find(a => a.id === 'star-collector')?.unlocked) {
-            const achievementIndex = newAchievements.findIndex(a => a.id === 'star-collector');
-            newAchievements[achievementIndex] = {
-              ...newAchievements[achievementIndex],
-              unlocked: true,
-              unlockedDate: new Date().toISOString()
-            };
-          }
-
-          if (completedTasksToday === totalTasksToday && totalTasksToday > 0 &&
-              !newAchievements.find(a => a.id === 'perfect-day')?.unlocked) {
-            const achievementIndex = newAchievements.findIndex(a => a.id === 'perfect-day');
-            newAchievements[achievementIndex] = {
-              ...newAchievements[achievementIndex],
-              unlocked: true,
-              unlockedDate: new Date().toISOString()
-            };
-          }
-
-          // 计算连续天数
-          let newStreak = state.currentStreak;
-          const yesterday = new Date();
-          yesterday.setDate(yesterday.getDate() - 1);
-          const yesterdayStr = yesterday.toISOString().split('T')[0];
-          const yesterdayRecord = state.dailyRecords.find(r => r.date === yesterdayStr);
-
-          if (yesterdayRecord && yesterdayRecord.tasks.some(t => t.completed)) {
-            newStreak = state.currentStreak + 1;
-          } else if (completedTasksToday > 0) {
-            newStreak = 1;
-          }
-
-          // 连续天数成就
-          if (newStreak >= 7 && !newAchievements.find(a => a.id === 'week-warrior')?.unlocked) {
-            const achievementIndex = newAchievements.findIndex(a => a.id === 'week-warrior');
-            newAchievements[achievementIndex] = {
-              ...newAchievements[achievementIndex],
-              unlocked: true,
-              unlockedDate: new Date().toISOString()
-            };
-          }
-
-          if (newStreak >= 30 && !newAchievements.find(a => a.id === 'month-master')?.unlocked) {
-            const achievementIndex = newAchievements.findIndex(a => a.id === 'month-master');
-            newAchievements[achievementIndex] = {
-              ...newAchievements[achievementIndex],
-              unlocked: true,
-              unlockedDate: new Date().toISOString()
-            };
-          }
+          // 注意：成就一旦解锁就不会回收，这是设计上的考虑
+          // 如果需要回收成就，可以添加相应的逻辑
 
           return {
             totalStars: newTotalStars,
             currentStreak: newStreak,
-            dailyRecords: newDailyRecords,
-            achievements: newAchievements
+            dailyRecords: newDailyRecords
+            // achievements 保持不变，成就不回收
           };
         });
       },

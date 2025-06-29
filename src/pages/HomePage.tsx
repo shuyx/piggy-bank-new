@@ -6,6 +6,7 @@ export const HomePage: React.FC = () => {
     totalStars,
     getTodayTasks,
     completeTask,
+    uncompleteTask, // 添加恢复任务函数
     getTodayProgress,
     getWeeklyStats,
     addCustomTask,
@@ -46,6 +47,20 @@ export const HomePage: React.FC = () => {
       button.classList.add('animate-bounce');
       setTimeout(() => {
         button.classList.remove('animate-bounce');
+      }, 1000);
+    }
+  };
+
+  // 新增：处理恢复任务
+  const handleUncompleteTask = (taskId: string) => {
+    uncompleteTask(taskId);
+    
+    // 恢复动画效果
+    const button = document.getElementById(`task-${taskId}`);
+    if (button) {
+      button.classList.add('animate-pulse');
+      setTimeout(() => {
+        button.classList.remove('animate-pulse');
       }, 1000);
     }
   };
@@ -211,18 +226,33 @@ export const HomePage: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                    <button
-                      id={`task-${task.id}`}
-                      onClick={() => handleCompleteTask(task.id)}
-                      disabled={task.completed}
-                      className={`px-4 py-2 rounded-lg font-medium transition-all transform ${
-                        task.completed
-                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          : 'bg-piggy-green text-white hover:bg-green-600 hover:scale-105 active:scale-95'
-                      }`}
-                    >
-                      {task.completed ? '✅ 已完成' : '完成'}
-                    </button>
+                    
+                    {/* 修改按钮部分 - 支持完成和恢复 */}
+                    <div className="flex gap-2">
+                      {task.completed ? (
+                        <>
+                          <button
+                            id={`task-${task.id}`}
+                            onClick={() => handleUncompleteTask(task.id)}
+                            className="px-3 py-2 rounded-lg font-medium transition-all transform bg-orange-500 text-white hover:bg-orange-600 hover:scale-105 active:scale-95"
+                            title="点错了？恢复任务"
+                          >
+                            🔄 恢复
+                          </button>
+                          <div className="px-4 py-2 rounded-lg font-medium bg-gray-300 text-gray-500">
+                            ✅ 已完成
+                          </div>
+                        </>
+                      ) : (
+                        <button
+                          id={`task-${task.id}`}
+                          onClick={() => handleCompleteTask(task.id)}
+                          className="px-4 py-2 rounded-lg font-medium transition-all transform bg-piggy-green text-white hover:bg-green-600 hover:scale-105 active:scale-95"
+                        >
+                          完成
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))
               )}
