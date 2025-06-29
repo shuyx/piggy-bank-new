@@ -163,6 +163,7 @@ export const HomePage: React.FC = () => {
     getTodayTasks,
     completeTask,
     uncompleteTask,
+    deleteTask,
     getTodayProgress,
     getWeeklyStats,
     addCustomTask,
@@ -178,7 +179,7 @@ export const HomePage: React.FC = () => {
   const [taskStars, setTaskStars] = useState(1);
   const [showReport, setShowReport] = useState(false);
   const [report, setReport] = useState('');
-  const [reportImage, setReportImage] = useState<string>(''); // 新增：报告图片
+  const [reportImage, setReportImage] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [celebrationVisible, setCelebrationVisible] = useState(false);
 
@@ -234,6 +235,28 @@ export const HomePage: React.FC = () => {
       console.error('恢复任务时出错:', error);
     }
   }, [uncompleteTask]);
+
+  // 新增：删除任务处理函数
+  const handleDeleteTask = useCallback((taskId: string, taskName: string) => {
+    if (window.confirm(`确定要删除任务"${taskName}"吗？`)) {
+      console.log('删除任务:', taskId);
+      
+      try {
+        deleteTask(taskId);
+        
+        // 删除动画效果
+        const taskElement = document.getElementById(`task-${taskId}`);
+        if (taskElement) {
+          taskElement.classList.add('animate-fadeOut');
+          setTimeout(() => {
+            taskElement.style.display = 'none';
+          }, 300);
+        }
+      } catch (error) {
+        console.error('删除任务时出错:', error);
+      }
+    }
+  }, [deleteTask]);
 
   const handleAddTask = () => {
     if (taskName.trim()) {
@@ -467,22 +490,23 @@ export const HomePage: React.FC = () => {
                   
                   return (
                     <div
+                      id={`task-${task.id}`}
                       key={uniqueTaskKey}
-                      className={`flex items-center justify-between p-4 rounded-lg transition-all duration-300 hover:scale-102 ${
+                      className={`flex items-center justify-between p-3 sm:p-4 rounded-lg transition-all duration-300 hover:scale-102 ${
                         task.completed
                           ? 'bg-green-50 opacity-75 border-2 border-green-200'
                           : 'bg-piggy-cream hover:bg-yellow-100 border-2 border-transparent hover:border-yellow-200'
                       }`}
                     >
-                      <div className="flex items-center gap-3">
-                        <span className={`text-2xl ${task.completed ? 'grayscale' : ''}`}>
+                      <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                        <span className={`text-xl sm:text-2xl ${task.completed ? 'grayscale' : ''}`}>
                           {getCategoryIcon(task.category)}
                         </span>
-                        <div>
-                          <span className={`font-medium ${task.completed ? 'line-through text-gray-500' : 'text-gray-800'}`}>
+                        <div className="flex-1 min-w-0">
+                          <span className={`font-medium text-sm sm:text-base ${task.completed ? 'line-through text-gray-500' : 'text-gray-800'}`}>
                             {task.name}
                           </span>
-                          <div className="flex items-center gap-2 mt-1">
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
                             <span className={`text-xs px-2 py-1 rounded-full border ${getCategoryColor(task.category)}`}>
                               {task.category === 'study' ? '学习' :
                                task.category === 'exercise' ? '运动' :
@@ -492,18 +516,15 @@ export const HomePage: React.FC = () => {
                               <span>⭐</span>
                               <span>{task.stars}</span>
                             </span>
-                            {/* 调试信息 */}
-                            <span className="text-xs text-gray-400">
-                              ID: {task.id.slice(-4)}
-                            </span>
                           </div>
                         </div>
                       </div>
                       
-                      {/* 修改按钮部分 - 确保每个任务独立操作 */}
-                      <div className="flex gap-2">
+                      {/* 响应式按钮区域 */}
+                      <div className="flex gap-1 sm:gap-2 flex-shrink-0 ml-2">
                         {task.completed ? (
                           <>
+                            {/* 恢复按钮 */}
                             <button
                               id={`restore-btn-${task.id}`}
                               onClick={(e) => {
@@ -512,31 +533,55 @@ export const HomePage: React.FC = () => {
                                 console.log('点击恢复按钮，任务ID:', task.id);
                                 handleUncompleteTask(task.id);
                               }}
-                              className="px-3 py-2 rounded-lg font-medium transition-all transform bg-orange-500 text-white hover:bg-orange-600 hover:scale-105 active:scale-95"
+                              className="px-2 py-1 sm:px-3 sm:py-2 rounded-lg font-medium transition-all transform bg-orange-500 text-white hover:bg-orange-600 hover:scale-105 active:scale-95 text-xs sm:text-sm whitespace-nowrap"
                               title="点错了？恢复任务"
                               type="button"
                             >
-                              🔄 恢复
+                              <span className="hidden sm:inline">🔄 恢复</span>
+                              <span className="sm:hidden">🔄</span>
                             </button>
-                            <div className="px-4 py-2 rounded-lg font-medium bg-gray-300 text-gray-500">
-                              ✅ 已完成
+                            
+                            {/* 已完成状态 */}
+                            <div className="px-2 py-1 sm:px-4 sm:py-2 rounded-lg font-medium bg-gray-300 text-gray-500 text-xs sm:text-sm whitespace-nowrap">
+                              <span className="hidden sm:inline">✅ 已完成</span>
+                              <span className="sm:hidden">✅</span>
                             </div>
                           </>
                         ) : (
-                          <button
-                            id={`complete-btn-${task.id}`}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              console.log('点击完成按钮，任务ID:', task.id);
-                              handleCompleteTask(task.id);
-                            }}
-                            className="px-4 py-2 rounded-lg font-medium transition-all transform bg-piggy-green text-white hover:bg-green-600 hover:scale-105 active:scale-95"
-                            type="button"
-                          >
-                            完成
-                          </button>
+                          <>
+                            {/* 完成按钮 */}
+                            <button
+                              id={`complete-btn-${task.id}`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log('点击完成按钮，任务ID:', task.id);
+                                handleCompleteTask(task.id);
+                              }}
+                              className="px-2 py-1 sm:px-4 sm:py-2 rounded-lg font-medium transition-all transform bg-piggy-green text-white hover:bg-green-600 hover:scale-105 active:scale-95 text-xs sm:text-sm whitespace-nowrap"
+                              type="button"
+                            >
+                              <span className="hidden sm:inline">完成</span>
+                              <span className="sm:hidden">✓</span>
+                            </button>
+                          </>
                         )}
+                        
+                        {/* 删除按钮 */}
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('点击删除按钮，任务ID:', task.id);
+                            handleDeleteTask(task.id, task.name);
+                          }}
+                          className="px-2 py-1 sm:px-3 sm:py-2 rounded-lg font-medium transition-all transform bg-red-500 text-white hover:bg-red-600 hover:scale-105 active:scale-95 text-xs sm:text-sm whitespace-nowrap"
+                          title="删除任务"
+                          type="button"
+                        >
+                          <span className="hidden sm:inline">🗑️ 删除</span>
+                          <span className="sm:hidden">🗑️</span>
+                        </button>
                       </div>
                     </div>
                   );
