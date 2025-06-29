@@ -3,6 +3,23 @@
 @tailwind utilities;
 
 /* 自定义动画 */
+/* 在 src/index.css 中添加 */
+.animate-fadeOut {
+  animation: fadeOut 0.3s ease-out forwards;
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+
 @keyframes bounce {
   0%, 100% {
     transform: translateY(0);

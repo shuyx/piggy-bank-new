@@ -38,13 +38,13 @@ interface AppState {
   addTask: (task: Omit<Task, 'id' | 'date'>) => void;
   completeTask: (taskId: string) => void;
   uncompleteTask: (taskId: string) => void;
+  deleteTask: (taskId: string) => void; // 新增：删除任务
   addCustomTask: (name: string, category: Task['category'], stars: number) => void;
   generateDailyReport: () => string;
   unlockAchievement: (achievementId: string) => void;
   getTodayTasks: () => Task[];
   getTodayProgress: () => number;
   getWeeklyStats: () => { totalStars: number; completionRate: number };
-  // 新增：清除今日所有任务
   clearTodayTasks: () => void;
 }
 
@@ -172,7 +172,7 @@ export const useStore = create<AppState>()(
       addTask: (taskData) => {
         const newTask: Task = {
           ...taskData,
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 9), // 更唯一的ID
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
           date: new Date().toISOString().split('T')[0],
           completed: false
         };
@@ -237,7 +237,7 @@ export const useStore = create<AppState>()(
 
           if (!taskFound) {
             console.warn('useStore: 未找到要完成的任务，ID:', taskId);
-            return state; // 如果没找到任务，不更新状态
+            return state;
           }
 
           console.log('useStore: 任务完成成功:', completedTaskName, '获得星星:', starsEarned);
@@ -322,7 +322,7 @@ export const useStore = create<AppState>()(
 
           if (!taskFound) {
             console.warn('useStore: 未找到要恢复的任务，ID:', taskId);
-            return state; // 如果没找到任务，不更新状态
+            return state;
           }
 
           console.log('useStore: 任务恢复成功:', restoredTaskName, '扣除星星:', starsLost);
@@ -343,7 +343,64 @@ export const useStore = create<AppState>()(
         });
       },
 
-      // 新增：清除今日所有任务
+      // 新增：删除任务功能
+      deleteTask: (taskId) => {
+        console.log('useStore: 开始删除任务，ID:', taskId);
+        
+        set((state) => {
+          const today = new Date().toISOString().split('T')[0];
+          let starsLost = 0;
+          let taskFound = false;
+          let deletedTaskName = '';
+
+          // 更新任务状态
+          const newDailyRecords = state.dailyRecords.map(record => {
+            if (record.date === today) {
+              const taskToDelete = record.tasks.find(task => task.id === taskId);
+              if (taskToDelete) {
+                console.log('useStore: 找到要删除的任务:', taskToDelete.name);
+                taskFound = true;
+                deletedTaskName = taskToDelete.name;
+                // 如果任务已完成，需要扣除星星
+                if (taskToDelete.completed) {
+                  starsLost = taskToDelete.stars;
+                }
+              }
+
+              const newTasks = record.tasks.filter(task => task.id !== taskId);
+
+              return {
+                ...record,
+                tasks: newTasks,
+                totalStars: newTasks.filter(t => t.completed).reduce((sum, t) => sum + t.stars, 0)
+              };
+            }
+            return record;
+          });
+
+          if (!taskFound) {
+            console.warn('useStore: 未找到要删除的任务，ID:', taskId);
+            return state;
+          }
+
+          console.log('useStore: 任务删除成功:', deletedTaskName, '扣除星星:', starsLost);
+
+          // 更新总星星数
+          const newTotalStars = Math.max(0, state.totalStars - starsLost);
+
+          // 重新计算连续天数
+          const newStreak = calculateStreak(newDailyRecords, state.currentStreak);
+
+          console.log('useStore: 删除状态更新完成，总星星:', newTotalStars, '连续天数:', newStreak);
+
+          return {
+            totalStars: newTotalStars,
+            currentStreak: newStreak,
+            dailyRecords: newDailyRecords
+          };
+        });
+      },
+
       clearTodayTasks: () => {
         console.log('useStore: 清除今日所有任务');
         
