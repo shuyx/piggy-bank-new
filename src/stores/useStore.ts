@@ -37,13 +37,15 @@ interface AppState {
   // 操作方法
   addTask: (task: Omit<Task, 'id' | 'date'>) => void;
   completeTask: (taskId: string) => void;
-  uncompleteTask: (taskId: string) => void; // 新增：恢复任务
+  uncompleteTask: (taskId: string) => void;
   addCustomTask: (name: string, category: Task['category'], stars: number) => void;
   generateDailyReport: () => string;
   unlockAchievement: (achievementId: string) => void;
   getTodayTasks: () => Task[];
   getTodayProgress: () => number;
   getWeeklyStats: () => { totalStars: number; completionRate: number };
+  // 新增：清除今日所有任务
+  clearTodayTasks: () => void;
 }
 
 // 初始成就列表
@@ -83,15 +85,6 @@ const initialAchievements: Achievement[] = [
     icon: '👑',
     unlocked: false
   }
-];
-
-// 默认任务模板
-const defaultTaskTemplates = [
-  { name: '完成作业', category: 'study' as const, stars: 3 },
-  { name: '阅读30分钟', category: 'study' as const, stars: 2 },
-  { name: '运动30分钟', category: 'exercise' as const, stars: 3 },
-  { name: '帮助做家务', category: 'behavior' as const, stars: 2 },
-  { name: '画画或手工', category: 'creativity' as const, stars: 2 }
 ];
 
 // 辅助函数：检查成就解锁条件
@@ -179,10 +172,12 @@ export const useStore = create<AppState>()(
       addTask: (taskData) => {
         const newTask: Task = {
           ...taskData,
-          id: Date.now().toString(),
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9), // 更唯一的ID
           date: new Date().toISOString().split('T')[0],
           completed: false
         };
+
+        console.log('useStore: 添加新任务:', newTask.name, 'ID:', newTask.id);
 
         set((state) => {
           const today = new Date().toISOString().split('T')[0];
@@ -209,16 +204,23 @@ export const useStore = create<AppState>()(
       },
 
       completeTask: (taskId) => {
+        console.log('useStore: 开始完成任务，ID:', taskId);
+        
         set((state) => {
           const today = new Date().toISOString().split('T')[0];
           let starsEarned = 0;
+          let taskFound = false;
+          let completedTaskName = '';
 
           // 更新任务状态
           const newDailyRecords = state.dailyRecords.map(record => {
             if (record.date === today) {
               const newTasks = record.tasks.map(task => {
                 if (task.id === taskId && !task.completed) {
+                  console.log('useStore: 找到并完成任务:', task.name, '星星:', task.stars);
                   starsEarned = task.stars;
+                  taskFound = true;
+                  completedTaskName = task.name;
                   return { ...task, completed: true };
                 }
                 return task;
@@ -232,6 +234,13 @@ export const useStore = create<AppState>()(
             }
             return record;
           });
+
+          if (!taskFound) {
+            console.warn('useStore: 未找到要完成的任务，ID:', taskId);
+            return state; // 如果没找到任务，不更新状态
+          }
+
+          console.log('useStore: 任务完成成功:', completedTaskName, '获得星星:', starsEarned);
 
           // 更新总星星数
           const newTotalStars = state.totalStars + starsEarned;
@@ -255,6 +264,7 @@ export const useStore = create<AppState>()(
               unlocked: true,
               unlockedDate: new Date().toISOString()
             };
+            console.log('useStore: 解锁成就 - 周冠军');
           }
 
           if (newStreak >= 30 && !finalAchievements.find(a => a.id === 'month-master')?.unlocked) {
@@ -264,7 +274,10 @@ export const useStore = create<AppState>()(
               unlocked: true,
               unlockedDate: new Date().toISOString()
             };
+            console.log('useStore: 解锁成就 - 月度大师');
           }
+
+          console.log('useStore: 状态更新完成，总星星:', newTotalStars, '连续天数:', newStreak);
 
           return {
             totalStars: newTotalStars,
@@ -275,18 +288,24 @@ export const useStore = create<AppState>()(
         });
       },
 
-      // 新增：恢复任务功能
       uncompleteTask: (taskId) => {
+        console.log('useStore: 开始恢复任务，ID:', taskId);
+        
         set((state) => {
           const today = new Date().toISOString().split('T')[0];
           let starsLost = 0;
+          let taskFound = false;
+          let restoredTaskName = '';
 
           // 更新任务状态
           const newDailyRecords = state.dailyRecords.map(record => {
             if (record.date === today) {
               const newTasks = record.tasks.map(task => {
                 if (task.id === taskId && task.completed) {
+                  console.log('useStore: 找到并恢复任务:', task.name, '扣除星星:', task.stars);
                   starsLost = task.stars;
+                  taskFound = true;
+                  restoredTaskName = task.name;
                   return { ...task, completed: false };
                 }
                 return task;
@@ -301,25 +320,66 @@ export const useStore = create<AppState>()(
             return record;
           });
 
+          if (!taskFound) {
+            console.warn('useStore: 未找到要恢复的任务，ID:', taskId);
+            return state; // 如果没找到任务，不更新状态
+          }
+
+          console.log('useStore: 任务恢复成功:', restoredTaskName, '扣除星星:', starsLost);
+
           // 更新总星星数
           const newTotalStars = Math.max(0, state.totalStars - starsLost);
 
           // 重新计算连续天数
           const newStreak = calculateStreak(newDailyRecords, state.currentStreak);
 
-          // 注意：成就一旦解锁就不会回收，这是设计上的考虑
-          // 如果需要回收成就，可以添加相应的逻辑
+          console.log('useStore: 恢复状态更新完成，总星星:', newTotalStars, '连续天数:', newStreak);
 
           return {
             totalStars: newTotalStars,
             currentStreak: newStreak,
             dailyRecords: newDailyRecords
-            // achievements 保持不变，成就不回收
+          };
+        });
+      },
+
+      // 新增：清除今日所有任务
+      clearTodayTasks: () => {
+        console.log('useStore: 清除今日所有任务');
+        
+        set((state) => {
+          const today = new Date().toISOString().split('T')[0];
+          
+          // 计算要减少的星星数
+          const todayRecord = state.dailyRecords.find(r => r.date === today);
+          const starsToDeduct = todayRecord?.totalStars || 0;
+          
+          const newDailyRecords = state.dailyRecords.map(record => {
+            if (record.date === today) {
+              return {
+                ...record,
+                tasks: [],
+                totalStars: 0
+              };
+            }
+            return record;
+          });
+
+          const newTotalStars = Math.max(0, state.totalStars - starsToDeduct);
+          const newStreak = calculateStreak(newDailyRecords, state.currentStreak);
+
+          console.log('useStore: 清除完成，扣除星星:', starsToDeduct, '新总星星:', newTotalStars);
+
+          return {
+            totalStars: newTotalStars,
+            currentStreak: newStreak,
+            dailyRecords: newDailyRecords
           };
         });
       },
 
       addCustomTask: (name, category, stars) => {
+        console.log('useStore: 添加自定义任务:', name, '分类:', category, '星星:', stars);
         const newTask = {
           name,
           category,
@@ -333,11 +393,18 @@ export const useStore = create<AppState>()(
         const today = new Date().toISOString().split('T')[0];
         const todayRecord = get().dailyRecords.find(r => r.date === today);
         
-        if (!todayRecord) return '今天还没有任务记录哦！';
+        console.log('useStore: 生成今日报告，日期:', today);
+        
+        if (!todayRecord) {
+          console.log('useStore: 今天没有任务记录');
+          return '今天还没有任务记录哦！';
+        }
 
         const completedTasks = todayRecord.tasks.filter(t => t.completed);
         const totalTasks = todayRecord.tasks.length;
         const completionRate = totalTasks > 0 ? (completedTasks.length / totalTasks * 100).toFixed(0) : 0;
+
+        console.log('useStore: 报告数据 - 完成任务:', completedTasks.length, '总任务:', totalTasks, '完成率:', completionRate + '%');
 
         const categoryStats = {
           study: completedTasks.filter(t => t.category === 'study').length,
@@ -369,6 +436,7 @@ export const useStore = create<AppState>()(
       },
 
       unlockAchievement: (achievementId) => {
+        console.log('useStore: 解锁成就:', achievementId);
         set((state) => ({
           achievements: state.achievements.map(a =>
             a.id === achievementId
@@ -381,14 +449,18 @@ export const useStore = create<AppState>()(
       getTodayTasks: () => {
         const today = new Date().toISOString().split('T')[0];
         const todayRecord = get().dailyRecords.find(r => r.date === today);
-        return todayRecord?.tasks || [];
+        const tasks = todayRecord?.tasks || [];
+        console.log('useStore: 获取今日任务，数量:', tasks.length);
+        return tasks;
       },
 
       getTodayProgress: () => {
         const todayTasks = get().getTodayTasks();
         if (todayTasks.length === 0) return 0;
         const completed = todayTasks.filter(t => t.completed).length;
-        return (completed / todayTasks.length) * 100;
+        const progress = (completed / todayTasks.length) * 100;
+        console.log('useStore: 今日进度:', progress.toFixed(1) + '%', '(' + completed + '/' + todayTasks.length + ')');
+        return progress;
       },
 
       getWeeklyStats: () => {
@@ -408,6 +480,8 @@ export const useStore = create<AppState>()(
         
         const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
+        console.log('useStore: 周统计 - 总星星:', totalStars, '完成率:', completionRate.toFixed(1) + '%');
+
         return { totalStars, completionRate };
       }
     }),
@@ -417,17 +491,14 @@ export const useStore = create<AppState>()(
   )
 );
 
-// 初始化今天的默认任务
+// 修改：不再自动初始化默认任务
 export const initializeTodayTasks = () => {
   const store = useStore.getState();
   const todayTasks = store.getTodayTasks();
   
-  if (todayTasks.length === 0) {
-    defaultTaskTemplates.forEach(template => {
-      store.addTask({
-        ...template,
-        completed: false
-      });
-    });
-  }
+  console.log('initializeTodayTasks: 当前任务数量:', todayTasks.length);
+  console.log('initializeTodayTasks: 不再自动添加默认任务，保持空白状态');
+  
+  // 移除了自动添加默认任务的逻辑
+  // 现在今日任务将保持空白，等待用户手动添加
 };

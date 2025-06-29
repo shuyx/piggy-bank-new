@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useStore, initializeTodayTasks } from '../stores/useStore';
 
 export const HomePage: React.FC = () => {
@@ -6,7 +6,7 @@ export const HomePage: React.FC = () => {
     totalStars,
     getTodayTasks,
     completeTask,
-    uncompleteTask, // 添加恢复任务函数
+    uncompleteTask,
     getTodayProgress,
     getWeeklyStats,
     addCustomTask,
@@ -34,36 +34,49 @@ export const HomePage: React.FC = () => {
     initializeTodayTasks();
   }, []);
 
-  const handleCompleteTask = (taskId: string) => {
-    completeTask(taskId);
+  // 使用 useCallback 确保每个任务有独立的处理函数
+  const handleCompleteTask = useCallback((taskId: string) => {
+    console.log('完成任务:', taskId); // 调试日志
     
-    // 显示庆祝动画
-    setCelebrationVisible(true);
-    setTimeout(() => setCelebrationVisible(false), 2000);
-    
-    // 任务完成动画效果
-    const button = document.getElementById(`task-${taskId}`);
-    if (button) {
-      button.classList.add('animate-bounce');
-      setTimeout(() => {
-        button.classList.remove('animate-bounce');
-      }, 1000);
+    try {
+      completeTask(taskId);
+      
+      // 显示庆祝动画
+      setCelebrationVisible(true);
+      setTimeout(() => setCelebrationVisible(false), 2000);
+      
+      // 任务完成动画效果
+      const button = document.getElementById(`complete-btn-${taskId}`);
+      if (button) {
+        button.classList.add('animate-bounce');
+        setTimeout(() => {
+          button.classList.remove('animate-bounce');
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('完成任务时出错:', error);
     }
-  };
+  }, [completeTask]);
 
-  // 新增：处理恢复任务
-  const handleUncompleteTask = (taskId: string) => {
-    uncompleteTask(taskId);
+  // 使用 useCallback 确保每个任务有独立的恢复函数
+  const handleUncompleteTask = useCallback((taskId: string) => {
+    console.log('恢复任务:', taskId); // 调试日志
     
-    // 恢复动画效果
-    const button = document.getElementById(`task-${taskId}`);
-    if (button) {
-      button.classList.add('animate-pulse');
-      setTimeout(() => {
-        button.classList.remove('animate-pulse');
-      }, 1000);
+    try {
+      uncompleteTask(taskId);
+      
+      // 恢复动画效果
+      const button = document.getElementById(`restore-btn-${taskId}`);
+      if (button) {
+        button.classList.add('animate-pulse');
+        setTimeout(() => {
+          button.classList.remove('animate-pulse');
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('恢复任务时出错:', error);
     }
-  };
+  }, [uncompleteTask]);
 
   const handleAddTask = () => {
     if (taskName.trim()) {
@@ -196,65 +209,86 @@ export const HomePage: React.FC = () => {
                   <div>还没有任务，点击右侧添加任务开始吧！</div>
                 </div>
               ) : (
-                todayTasks.map(task => (
-                  <div
-                    key={task.id}
-                    className={`flex items-center justify-between p-4 rounded-lg transition-all duration-300 hover:scale-102 ${
-                      task.completed
-                        ? 'bg-green-50 opacity-75 border-2 border-green-200'
-                        : 'bg-piggy-cream hover:bg-yellow-100 border-2 border-transparent hover:border-yellow-200'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className={`text-2xl ${task.completed ? 'grayscale' : ''}`}>
-                        {getCategoryIcon(task.category)}
-                      </span>
-                      <div>
-                        <span className={`font-medium ${task.completed ? 'line-through text-gray-500' : 'text-gray-800'}`}>
-                          {task.name}
+                todayTasks.map((task, index) => {
+                  // 确保每个任务有唯一的标识
+                  const uniqueTaskKey = `${task.id}-${task.date}-${index}`;
+                  
+                  return (
+                    <div
+                      key={uniqueTaskKey}
+                      className={`flex items-center justify-between p-4 rounded-lg transition-all duration-300 hover:scale-102 ${
+                        task.completed
+                          ? 'bg-green-50 opacity-75 border-2 border-green-200'
+                          : 'bg-piggy-cream hover:bg-yellow-100 border-2 border-transparent hover:border-yellow-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className={`text-2xl ${task.completed ? 'grayscale' : ''}`}>
+                          {getCategoryIcon(task.category)}
                         </span>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className={`text-xs px-2 py-1 rounded-full border ${getCategoryColor(task.category)}`}>
-                            {task.category === 'study' ? '学习' :
-                             task.category === 'exercise' ? '运动' :
-                             task.category === 'behavior' ? '行为' : '创造'}
+                        <div>
+                          <span className={`font-medium ${task.completed ? 'line-through text-gray-500' : 'text-gray-800'}`}>
+                            {task.name}
                           </span>
-                          <span className="text-xs text-gray-500 flex items-center gap-1">
-                            <span>⭐</span>
-                            <span>{task.stars}</span>
-                          </span>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`text-xs px-2 py-1 rounded-full border ${getCategoryColor(task.category)}`}>
+                              {task.category === 'study' ? '学习' :
+                               task.category === 'exercise' ? '运动' :
+                               task.category === 'behavior' ? '行为' : '创造'}
+                            </span>
+                            <span className="text-xs text-gray-500 flex items-center gap-1">
+                              <span>⭐</span>
+                              <span>{task.stars}</span>
+                            </span>
+                            {/* 调试信息 */}
+                            <span className="text-xs text-gray-400">
+                              ID: {task.id.slice(-4)}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    
-                    {/* 修改按钮部分 - 支持完成和恢复 */}
-                    <div className="flex gap-2">
-                      {task.completed ? (
-                        <>
+                      
+                      {/* 修改按钮部分 - 确保每个任务独立操作 */}
+                      <div className="flex gap-2">
+                        {task.completed ? (
+                          <>
+                            <button
+                              id={`restore-btn-${task.id}`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log('点击恢复按钮，任务ID:', task.id);
+                                handleUncompleteTask(task.id);
+                              }}
+                              className="px-3 py-2 rounded-lg font-medium transition-all transform bg-orange-500 text-white hover:bg-orange-600 hover:scale-105 active:scale-95"
+                              title="点错了？恢复任务"
+                              type="button"
+                            >
+                              🔄 恢复
+                            </button>
+                            <div className="px-4 py-2 rounded-lg font-medium bg-gray-300 text-gray-500">
+                              ✅ 已完成
+                            </div>
+                          </>
+                        ) : (
                           <button
-                            id={`task-${task.id}`}
-                            onClick={() => handleUncompleteTask(task.id)}
-                            className="px-3 py-2 rounded-lg font-medium transition-all transform bg-orange-500 text-white hover:bg-orange-600 hover:scale-105 active:scale-95"
-                            title="点错了？恢复任务"
+                            id={`complete-btn-${task.id}`}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              console.log('点击完成按钮，任务ID:', task.id);
+                              handleCompleteTask(task.id);
+                            }}
+                            className="px-4 py-2 rounded-lg font-medium transition-all transform bg-piggy-green text-white hover:bg-green-600 hover:scale-105 active:scale-95"
+                            type="button"
                           >
-                            🔄 恢复
+                            完成
                           </button>
-                          <div className="px-4 py-2 rounded-lg font-medium bg-gray-300 text-gray-500">
-                            ✅ 已完成
-                          </div>
-                        </>
-                      ) : (
-                        <button
-                          id={`task-${task.id}`}
-                          onClick={() => handleCompleteTask(task.id)}
-                          className="px-4 py-2 rounded-lg font-medium transition-all transform bg-piggy-green text-white hover:bg-green-600 hover:scale-105 active:scale-95"
-                        >
-                          完成
-                        </button>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
