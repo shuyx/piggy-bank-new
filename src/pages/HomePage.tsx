@@ -1,12 +1,15 @@
+// 更新后的 HomePage.tsx - 恢复成就徽章显示
 import React, { useState, useEffect, useCallback } from 'react';
 import { useStore } from '../stores/useStore';
 import { TodayStats } from '../components/TodayStats';
 import { TodayTasks } from '../components/TodayTasks';
 import { WeeklyChart } from '../components/WeeklyChart';
 import { CelebrationAnimation } from '../components/CelebrationAnimation';
+import { AchievementBadges } from '../components/AchievementBadges';
 import { TaskManager } from '../components/TaskManager';
 import { DailyReport } from '../components/DailyReport';
 import { InstallPrompt } from '../components/InstallPrompt';
+import { initializeTodayTasks } from '../stores/useStore';
 
 export const HomePage: React.FC = () => {
   const {
@@ -28,6 +31,10 @@ export const HomePage: React.FC = () => {
   const todayProgress = getTodayProgress();
   const weeklyStats = getWeeklyStats();
   const unlockedCount = achievements.filter(a => a.unlocked).length;
+
+  useEffect(() => {
+    initializeTodayTasks();
+  }, []);
 
   // 任务操作处理函数
   const handleCompleteTask = useCallback((taskId: string) => {
@@ -102,22 +109,38 @@ export const HomePage: React.FC = () => {
             todayProgress={todayProgress}
             currentStreak={currentStreak}
             unlockedCount={unlockedCount}
+            totalAchievements={achievements.length}
           />
         </header>
 
-        {/* 主要内容区域 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* 今日任务 */}
-          <TodayTasks
-            tasks={todayTasks}
-            onCompleteTask={handleCompleteTask}
-            onUncompleteTask={handleUncompleteTask}
-            onDeleteTask={handleDeleteTask}
-          />
+        {/* 主要内容区域 - 三列布局 */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* 左侧：今日任务 */}
+          <div className="lg:col-span-1">
+            <TodayTasks
+              tasks={todayTasks}
+              onCompleteTask={handleCompleteTask}
+              onUncompleteTask={handleUncompleteTask}
+              onDeleteTask={handleDeleteTask}
+            />
+          </div>
 
-          {/* 任务管理器 */}
-          <TaskManager />
+          {/* 中间：任务管理 */}
+          <div className="lg:col-span-1">
+            <TaskManager />
+          </div>
 
+          {/* 右侧：成就徽章 */}
+          <div className="lg:col-span-1">
+            <AchievementBadges 
+              achievements={achievements}
+              unlockedCount={unlockedCount}
+            />
+          </div>
+        </div>
+
+        {/* 下方区域 - 两列布局 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
           {/* 周数据图表 */}
           <WeeklyChart 
             chartData={chartData}
