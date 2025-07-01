@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-interface Task {
+export interface Task {
   id: string;
   name: string;
   category: 'study' | 'exercise' | 'behavior' | 'creativity';
@@ -10,7 +10,7 @@ interface Task {
   date: string;
 }
 
-interface Achievement {
+export interface Achievement {
   id: string;
   name: string;
   description: string;
@@ -19,7 +19,7 @@ interface Achievement {
   unlockedDate?: string;
 }
 
-interface DailyRecord {
+export interface DailyRecord {
   date: string;
   tasks: Task[];
   totalStars: number;
@@ -38,7 +38,7 @@ interface AppState {
   addTask: (task: Omit<Task, 'id' | 'date'>) => void;
   completeTask: (taskId: string) => void;
   uncompleteTask: (taskId: string) => void;
-  deleteTask: (taskId: string) => void; // 新增：删除任务
+  deleteTask: (taskId: string) => void;
   addCustomTask: (name: string, category: Task['category'], stars: number) => void;
   generateDailyReport: () => string;
   unlockAchievement: (achievementId: string) => void;
