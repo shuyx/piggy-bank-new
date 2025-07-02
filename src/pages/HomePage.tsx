@@ -1,4 +1,4 @@
-// 更新后的 HomePage.tsx - 恢复成就徽章显示
+// 简化版 HomePage.tsx - 暂时移除 Supabase 功能
 import React, { useState, useEffect, useCallback } from 'react';
 import { useStore } from '../stores/useStore';
 import { TodayStats } from '../components/TodayStats';
@@ -10,6 +10,9 @@ import { TaskManager } from '../components/TaskManager';
 import { DailyReport } from '../components/DailyReport';
 import { InstallPrompt } from '../components/InstallPrompt';
 import { initializeTodayTasks } from '../stores/useStore';
+// 暂时注释掉 Supabase 相关导入
+// import { AuthModal } from '../components/AuthModal';
+// import { SyncStatus } from '../components/SyncStatus';
 
 export const HomePage: React.FC = () => {
   const {
@@ -26,7 +29,10 @@ export const HomePage: React.FC = () => {
   } = useStore();
 
   const [celebrationVisible, setCelebrationVisible] = useState(false);
-
+  // 暂时注释掉认证相关状态
+  // const [showAuthModal, setShowAuthModal] = useState(false);
+  // const [user, setUser] = useState(null);
+  
   const todayTasks = getTodayTasks();
   const todayProgress = getTodayProgress();
   const weeklyStats = getWeeklyStats();
@@ -113,6 +119,14 @@ export const HomePage: React.FC = () => {
           />
         </header>
 
+        {/* 临时提示信息 - 替代认证功能 */}
+        <div className="bg-blue-100 border border-blue-400 rounded-lg p-4 mb-6 text-center">
+          <div className="text-blue-800">
+            <strong>🚀 提示：</strong> 
+            云端同步功能正在开发中，敬请期待！当前数据存储在本地浏览器中。
+          </div>
+        </div>
+
         {/* 主要内容区域 - 三列布局 */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* 左侧：今日任务 */}
@@ -153,6 +167,17 @@ export const HomePage: React.FC = () => {
 
         {/* 安装提示 */}
         <InstallPrompt />
+
+        {/* 暂时注释掉认证弹窗 */}
+        {/*
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          onSuccess={() => {
+            window.location.reload();
+          }}
+        />
+        */}
       </div>
     </div>
   );

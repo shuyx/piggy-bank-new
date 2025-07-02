@@ -26,7 +26,7 @@ export interface DailyRecord {
   report?: string;
 }
 
-interface AppState {
+export interface AppState {
   // 基础数据
   totalStars: number;
   currentStreak: number;
@@ -46,6 +46,7 @@ interface AppState {
   getTodayProgress: () => number;
   getWeeklyStats: () => { totalStars: number; completionRate: number };
   clearTodayTasks: () => void;
+  loadFromCloud: (cloudData: any) => void;
 }
 
 // 初始成就列表
@@ -343,7 +344,6 @@ export const useStore = create<AppState>()(
         });
       },
 
-      // 新增：删除任务功能
       deleteTask: (taskId) => {
         console.log('useStore: 开始删除任务，ID:', taskId);
         
@@ -540,6 +540,18 @@ export const useStore = create<AppState>()(
         console.log('useStore: 周统计 - 总星星:', totalStars, '完成率:', completionRate.toFixed(1) + '%');
 
         return { totalStars, completionRate };
+      },
+
+      loadFromCloud: (cloudData) => {
+        console.log('useStore: 从云端加载数据:', cloudData);
+        set(() => ({
+          totalStars: cloudData.total_stars || 0,
+          currentStreak: cloudData.current_streak || 0,
+          dailyRecords: cloudData.daily_records || [],
+          achievements: cloudData.achievements || initialAchievements,
+          customTasks: cloudData.custom_tasks || []
+        }));
+        console.log('useStore: 云端数据加载完成');
       }
     }),
     {
