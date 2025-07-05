@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { supabase } from './supabase.ts.backup'
 import { AppState } from '../stores/useStore'
 
 class SupabaseService {

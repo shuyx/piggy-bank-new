@@ -59,17 +59,52 @@ const initialAchievements: Achievement[] = [
     unlocked: false
   },
   {
-    id: 'week-warrior',
-    name: '周冠军',
-    description: '连续7天完成任务',
-    icon: '🏆',
+    id: 'star-collector-50',
+    name: '星星新手',
+    description: '累计获得50颗星星',
+    icon: '✨',
     unlocked: false
   },
   {
-    id: 'star-collector',
+    id: 'star-collector-100',
     name: '星星收集者',
     description: '累计获得100颗星星',
     icon: '💫',
+    unlocked: false
+  },
+  {
+    id: 'star-collector-200',
+    name: '星星猎人',
+    description: '累计获得200颗星星',
+    icon: '🌠',
+    unlocked: false
+  },
+  {
+    id: 'star-collector-300',
+    name: '星星大师',
+    description: '累计获得300颗星星',
+    icon: '⭐',
+    unlocked: false
+  },
+  {
+    id: 'star-collector-500',
+    name: '星星收藏家',
+    description: '累计获得500颗星星',
+    icon: '🌟',
+    unlocked: false
+  },
+  {
+    id: 'star-collector-1000',
+    name: '星星大魔王',
+    description: '累计获得1000颗星星',
+    icon: '👹',
+    unlocked: false
+  },
+  {
+    id: 'star-collector-2000',
+    name: '星星宇宙大魔王',
+    description: '累计获得2000颗星星',
+    icon: '🌌',
     unlocked: false
   },
   {
@@ -80,10 +115,45 @@ const initialAchievements: Achievement[] = [
     unlocked: false
   },
   {
+    id: 'week-warrior',
+    name: '周冠军',
+    description: '连续7天完成任务(排除周日)',
+    icon: '🏆',
+    unlocked: false
+  },
+  {
+    id: 'week-warrior-2',
+    name: '双周战士',
+    description: '连续14天完成任务(排除周日)',
+    icon: '🥇',
+    unlocked: false
+  },
+  {
     id: 'month-master',
     name: '月度大师',
-    description: '连续30天完成任务',
+    description: '连续30天完成任务(排除周日)',
     icon: '👑',
+    unlocked: false
+  },
+  {
+    id: 'early-bird',
+    name: '早起鸟儿',
+    description: '连续7天早上8点前完成任务',
+    icon: '🐦',
+    unlocked: false
+  },
+  {
+    id: 'all-rounder',
+    name: '全能选手',
+    description: '单日完成所有类别的任务',
+    icon: '🎨',
+    unlocked: false
+  },
+  {
+    id: 'super-day',
+    name: '超级一天',
+    description: '单日获得超过20颗星星',
+    icon: '🚀',
     unlocked: false
   }
 ];
@@ -104,16 +174,28 @@ const checkAchievements = (state: any, newTotalStars: number, todayTasks: Task[]
     hasNewUnlock = true;
   }
 
-  // 检查星星收集者成就
-  if (newTotalStars >= 100 && !newAchievements.find(a => a.id === 'star-collector')?.unlocked) {
-    const achievementIndex = newAchievements.findIndex(a => a.id === 'star-collector');
-    newAchievements[achievementIndex] = {
-      ...newAchievements[achievementIndex],
-      unlocked: true,
-      unlockedDate: new Date().toISOString()
-    };
-    hasNewUnlock = true;
-  }
+  // 检查星星收集成就（多个等级）
+  const starMilestones = [
+    { stars: 50, id: 'star-collector-50' },
+    { stars: 100, id: 'star-collector-100' },
+    { stars: 200, id: 'star-collector-200' },
+    { stars: 300, id: 'star-collector-300' },
+    { stars: 500, id: 'star-collector-500' },
+    { stars: 1000, id: 'star-collector-1000' },
+    { stars: 2000, id: 'star-collector-2000' }
+  ];
+
+  starMilestones.forEach(milestone => {
+    if (newTotalStars >= milestone.stars && !newAchievements.find(a => a.id === milestone.id)?.unlocked) {
+      const achievementIndex = newAchievements.findIndex(a => a.id === milestone.id);
+      newAchievements[achievementIndex] = {
+        ...newAchievements[achievementIndex],
+        unlocked: true,
+        unlockedDate: new Date().toISOString()
+      };
+      hasNewUnlock = true;
+    }
+  });
 
   // 检查完美一天成就
   const completedTasksToday = todayTasks.filter(t => t.completed).length;
@@ -129,11 +211,36 @@ const checkAchievements = (state: any, newTotalStars: number, todayTasks: Task[]
     hasNewUnlock = true;
   }
 
+  // 检查超级一天成就（单日20+星星）
+  const todayStars = todayTasks.filter(t => t.completed).reduce((sum, t) => sum + t.stars, 0);
+  if (todayStars >= 20 && !newAchievements.find(a => a.id === 'super-day')?.unlocked) {
+    const achievementIndex = newAchievements.findIndex(a => a.id === 'super-day');
+    newAchievements[achievementIndex] = {
+      ...newAchievements[achievementIndex],
+      unlocked: true,
+      unlockedDate: new Date().toISOString()
+    };
+    hasNewUnlock = true;
+  }
+
+  // 检查全能选手成就（单日完成所有类别）
+  const categories = ['study', 'exercise', 'behavior', 'creativity'];
+  const completedCategories = new Set(todayTasks.filter(t => t.completed).map(t => t.category));
+  if (completedCategories.size === categories.length && !newAchievements.find(a => a.id === 'all-rounder')?.unlocked) {
+    const achievementIndex = newAchievements.findIndex(a => a.id === 'all-rounder');
+    newAchievements[achievementIndex] = {
+      ...newAchievements[achievementIndex],
+      unlocked: true,
+      unlockedDate: new Date().toISOString()
+    };
+    hasNewUnlock = true;
+  }
+
   return { newAchievements, hasNewUnlock };
 };
 
-// 辅助函数：计算连续天数
-const calculateStreak = (dailyRecords: DailyRecord[], currentStreak: number) => {
+// 辅助函数：计算连续天数（排除周日）
+const calculateStreak = (dailyRecords: DailyRecord[], currentStreak: number, excludeSunday: boolean = true) => {
   const today = new Date().toISOString().split('T')[0];
   const todayRecord = dailyRecords.find(r => r.date === today);
   
@@ -149,9 +256,20 @@ const calculateStreak = (dailyRecords: DailyRecord[], currentStreak: number) => 
   for (let i = 1; i < sortedRecords.length; i++) {
     const prevDate = new Date(sortedRecords[i-1].date);
     const currDate = new Date(sortedRecords[i].date);
-    const dayDiff = Math.floor((prevDate.getTime() - currDate.getTime()) / (1000 * 60 * 60 * 24));
     
-    if (dayDiff === 1) {
+    // 如果排除周日，计算实际间隔天数时需要考虑中间的周日
+    let actualDayDiff = 0;
+    let checkDate = new Date(currDate);
+    checkDate.setDate(checkDate.getDate() + 1);
+    
+    while (checkDate <= prevDate) {
+      if (!excludeSunday || checkDate.getDay() !== 0) {
+        actualDayDiff++;
+      }
+      checkDate.setDate(checkDate.getDate() + 1);
+    }
+    
+    if (actualDayDiff === 1) {
       streak++;
     } else {
       break;
@@ -266,6 +384,16 @@ export const useStore = create<AppState>()(
               unlockedDate: new Date().toISOString()
             };
             console.log('useStore: 解锁成就 - 周冠军');
+          }
+
+          if (newStreak >= 14 && !finalAchievements.find(a => a.id === 'week-warrior-2')?.unlocked) {
+            const achievementIndex = finalAchievements.findIndex(a => a.id === 'week-warrior-2');
+            finalAchievements[achievementIndex] = {
+              ...finalAchievements[achievementIndex],
+              unlocked: true,
+              unlockedDate: new Date().toISOString()
+            };
+            console.log('useStore: 解锁成就 - 双周战士');
           }
 
           if (newStreak >= 30 && !finalAchievements.find(a => a.id === 'month-master')?.unlocked) {
@@ -556,6 +684,25 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'piggy-bank-storage',
+      version: 2, // 增加版本号
+      migrate: (persistedState: any, version: number) => {
+        if (version === 0 || version === 1) {
+          // 从旧版本迁移，更新成就列表
+          console.log('Migrating achievements from version', version, 'to version 2');
+          return {
+            ...persistedState,
+            achievements: initialAchievements.map(newAch => {
+              // 保留已解锁的成就状态
+              const oldAch = persistedState.achievements?.find((a: Achievement) => a.id === newAch.id);
+              if (oldAch && oldAch.unlocked) {
+                return { ...newAch, unlocked: true, unlockedDate: oldAch.unlockedDate };
+              }
+              return newAch;
+            })
+          };
+        }
+        return persistedState;
+      },
     }
   )
 );
