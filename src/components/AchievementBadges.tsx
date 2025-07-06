@@ -82,7 +82,7 @@ export const AchievementBadges: React.FC<AchievementBadgesProps> = ({
         )}
 
         {/* 响应式网格布局 */}
-        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3 overflow-hidden">
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 p-1 sm:p-2">
           {achievementGroups[currentGroupIndex]?.map(achievement => (
             <div
               key={achievement.id}
