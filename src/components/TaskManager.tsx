@@ -65,20 +65,32 @@ export const TaskManager: React.FC = () => {
 
             <div className="flex items-center gap-3">
               <span className="text-gray-700 font-medium">星星数：</span>
+              <input
+                type="number"
+                min="1"
+                max="99"
+                value={taskStars}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value) || 1;
+                  setTaskStars(Math.max(1, Math.min(99, value)));
+                }}
+                className="w-20 px-3 py-2 rounded-lg border border-gray-300 text-center font-bold text-piggy-orange focus:outline-none focus:border-piggy-blue focus:ring-2 focus:ring-piggy-blue focus:ring-opacity-20"
+              />
               <div className="flex gap-1">
-                {[1, 2, 3, 4, 5].map(star => (
+                {[1, 2, 3, 5, 10].map(preset => (
                   <button
-                    key={star}
-                    onClick={() => setTaskStars(star)}
-                    className={`text-2xl transition-all hover:scale-110 ${
-                      star <= taskStars ? 'text-yellow-400' : 'text-gray-300'
+                    key={preset}
+                    onClick={() => setTaskStars(preset)}
+                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-all transform hover:scale-105 ${
+                      taskStars === preset
+                        ? 'bg-yellow-400 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
-                    ⭐
+                    {preset}⭐
                   </button>
                 ))}
               </div>
-              <span className="text-piggy-orange font-bold text-lg">{taskStars}</span>
             </div>
 
             <div className="flex gap-2">
