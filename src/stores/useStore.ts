@@ -689,7 +689,9 @@ export const useStore = create<AppState>()(
         if (version === 0 || version === 1) {
           // 从旧版本迁移，更新成就列表
           console.log('Migrating achievements from version', version, 'to version 2');
-          return {
+          
+          // 确保所有数据都被保留
+          const migratedState = {
             ...persistedState,
             achievements: initialAchievements.map(newAch => {
               // 保留已解锁的成就状态
@@ -699,6 +701,15 @@ export const useStore = create<AppState>()(
               }
               return newAch;
             })
+          };
+          
+          // 保留所有其他数据
+          return {
+            totalStars: persistedState.totalStars || 0,
+            currentStreak: persistedState.currentStreak || 0,
+            dailyRecords: persistedState.dailyRecords || [],
+            customTasks: persistedState.customTasks || [],
+            ...migratedState
           };
         }
         return persistedState;
