@@ -33,5 +33,13 @@
   <body>
     <noscript>你需要启用 JavaScript 来运行这个应用。</noscript>
     <div id="root"></div>
+    <script>
+      // 开发环境下加载开发工具
+      if (window.location.hostname === 'localhost') {
+        const script = document.createElement('script');
+        script.src = '%PUBLIC_URL%/dev-helper.js';
+        document.body.appendChild(script);
+      }
+    </script>
   </body>
 </html>
