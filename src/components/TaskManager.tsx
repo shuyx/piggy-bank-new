@@ -64,34 +64,36 @@ export const TaskManager: React.FC = () => {
               ))}
             </div>
 
-            <div className="flex items-center gap-3">
-              <span className="text-gray-700 font-medium">星星数：</span>
-              <input
-                type="number"
-                min="1"
-                max="99"
-                value={taskStars}
-                onChange={(e) => {
-                  const inputValue = e.target.value;
-                  if (inputValue === '') {
-                    setTaskStars('' as any);
-                  } else {
-                    const value = parseInt(inputValue);
-                    if (!isNaN(value)) {
-                      setTaskStars(value);
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <span className="text-gray-700 font-medium">星星数：</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="99"
+                  value={taskStars}
+                  onChange={(e) => {
+                    const inputValue = e.target.value;
+                    if (inputValue === '') {
+                      setTaskStars('' as any);
+                    } else {
+                      const value = parseInt(inputValue);
+                      if (!isNaN(value)) {
+                        setTaskStars(value);
+                      }
                     }
-                  }
-                }}
-                onBlur={() => {
-                  if (taskStars === '' || Number(taskStars) < 1) {
-                    setTaskStars(1);
-                  } else if (Number(taskStars) > 99) {
-                    setTaskStars(99);
-                  }
-                }}
-                className="w-20 px-3 py-2 rounded-lg border border-gray-300 text-center font-bold text-piggy-orange focus:outline-none focus:border-piggy-blue focus:ring-2 focus:ring-piggy-blue focus:ring-opacity-20"
-              />
-              <div className="flex gap-1">
+                  }}
+                  onBlur={() => {
+                    if (taskStars === '' || Number(taskStars) < 1) {
+                      setTaskStars(1);
+                    } else if (Number(taskStars) > 99) {
+                      setTaskStars(99);
+                    }
+                  }}
+                  className="w-20 px-3 py-2 rounded-lg border border-gray-300 text-center font-bold text-piggy-orange focus:outline-none focus:border-piggy-blue focus:ring-2 focus:ring-piggy-blue focus:ring-opacity-20"
+                />
+              </div>
+              <div className="flex gap-1 flex-wrap">
                 {[1, 2, 3, 5, 10].map(preset => (
                   <button
                     key={preset}
