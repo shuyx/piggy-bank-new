@@ -6,11 +6,12 @@ export const TaskManager: React.FC = () => {
   const [showAddTask, setShowAddTask] = useState(false);
   const [taskName, setTaskName] = useState('');
   const [taskCategory, setTaskCategory] = useState<'study' | 'exercise' | 'behavior' | 'creativity'>('study');
-  const [taskStars, setTaskStars] = useState(1);
+  const [taskStars, setTaskStars] = useState<number | string>(1);
 
   const handleAddTask = () => {
     if (taskName.trim()) {
-      addCustomTask(taskName, taskCategory, taskStars);
+      const starsValue = typeof taskStars === 'string' || taskStars < 1 ? 1 : taskStars;
+      addCustomTask(taskName, taskCategory, starsValue);
       setTaskName('');
       setTaskStars(1);
       setShowAddTask(false);
@@ -71,8 +72,22 @@ export const TaskManager: React.FC = () => {
                 max="99"
                 value={taskStars}
                 onChange={(e) => {
-                  const value = parseInt(e.target.value) || 1;
-                  setTaskStars(Math.max(1, Math.min(99, value)));
+                  const inputValue = e.target.value;
+                  if (inputValue === '') {
+                    setTaskStars('' as any);
+                  } else {
+                    const value = parseInt(inputValue);
+                    if (!isNaN(value)) {
+                      setTaskStars(value);
+                    }
+                  }
+                }}
+                onBlur={() => {
+                  if (taskStars === '' || Number(taskStars) < 1) {
+                    setTaskStars(1);
+                  } else if (Number(taskStars) > 99) {
+                    setTaskStars(99);
+                  }
                 }}
                 className="w-20 px-3 py-2 rounded-lg border border-gray-300 text-center font-bold text-piggy-orange focus:outline-none focus:border-piggy-blue focus:ring-2 focus:ring-piggy-blue focus:ring-opacity-20"
               />
@@ -82,7 +97,7 @@ export const TaskManager: React.FC = () => {
                     key={preset}
                     onClick={() => setTaskStars(preset)}
                     className={`px-3 py-1 rounded-lg text-sm font-medium transition-all transform hover:scale-105 ${
-                      taskStars === preset
+                      Number(taskStars) === preset
                         ? 'bg-yellow-400 text-white'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
