@@ -44,6 +44,7 @@ export interface AppState {
   achievements: Achievement[];
   customTasks: Task[];
   taskTemplates: TaskTemplate[];
+  adminPassword?: string; // 管理员密码（加密存储）
   
   // 操作方法
   addTask: (task: Omit<Task, 'id' | 'date'>) => void;
@@ -61,6 +62,14 @@ export interface AppState {
   exportData: () => string;
   exportDataAsJSON: () => string;
   importData: (jsonData: string) => Promise<boolean>;
+  
+  // 密码管理
+  hasPassword: () => boolean;
+  setPassword: (password: string) => void;
+  verifyPassword: (password: string) => boolean;
+  
+  // 总星星数调整
+  adjustTotalStars: (newTotal: number) => void;
   
   // 任务模板相关方法
   saveTaskTemplate: (name: string, category: Task['category'], stars: number) => void;
@@ -310,6 +319,7 @@ export const useStore = create<AppState>()(
       achievements: initialAchievements,
       customTasks: [],
       taskTemplates: [],
+      adminPassword: undefined,
 
       addTask: (taskData) => {
         const newTask: Task = {
@@ -800,6 +810,35 @@ export const useStore = create<AppState>()(
 
       getDeletedTaskTemplates: () => {
         return get().taskTemplates.filter(t => t.isDeleted);
+      },
+
+      // 密码管理
+      hasPassword: () => {
+        return !!get().adminPassword;
+      },
+
+      setPassword: (password: string) => {
+        // 简单的密码哈希（实际应用中应使用更安全的方法）
+        const hashedPassword = btoa(password + 'piggy-bank-salt');
+        set({ adminPassword: hashedPassword });
+        console.log('管理员密码已设置');
+      },
+
+      verifyPassword: (password: string) => {
+        const hashedPassword = btoa(password + 'piggy-bank-salt');
+        return get().adminPassword === hashedPassword;
+      },
+
+      // 总星星数调整
+      adjustTotalStars: (newTotal: number) => {
+        if (newTotal < 0) {
+          console.warn('总星星数不能为负数');
+          return;
+        }
+        
+        const oldTotal = get().totalStars;
+        set({ totalStars: newTotal });
+        console.log(`总星星数已调整: ${oldTotal} → ${newTotal}`);
       },
 
       exportData: () => {

@@ -1,14 +1,20 @@
 import React, { useState } from 'react';
 import { useStore } from '../stores/useStore';
+import { PasswordModal } from './PasswordModal';
+import { StarsAdjustmentModal } from './StarsAdjustmentModal';
 
 export const DailyReport: React.FC = () => {
-  const { generateDailyReport, exportData, exportDataAsJSON, importData } = useStore();
+  const { generateDailyReport, exportData, exportDataAsJSON, importData, hasPassword } = useStore();
   const [showReport, setShowReport] = useState(false);
   const [report, setReport] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isExportingJSON, setIsExportingJSON] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  
+  // 星星调整相关状态
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showStarsModal, setShowStarsModal] = useState(false);
 
   const handleGenerateReport = async () => {
     setIsGenerating(true);
@@ -114,6 +120,24 @@ export const DailyReport: React.FC = () => {
       }
     };
     input.click();
+  };
+
+  // 处理星星调整
+  const handleStarsAdjustment = () => {
+    setShowPasswordModal(true);
+  };
+
+  const handlePasswordSuccess = () => {
+    setShowPasswordModal(false);
+    setShowStarsModal(true);
+  };
+
+  const handlePasswordClose = () => {
+    setShowPasswordModal(false);
+  };
+
+  const handleStarsModalClose = () => {
+    setShowStarsModal(false);
   };
 
   return (
@@ -239,14 +263,39 @@ export const DailyReport: React.FC = () => {
               </div>
             )}
           </button>
+          
+          {/* 星星调整按钮 */}
+          <button
+            onClick={handleStarsAdjustment}
+            className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-4 py-2 rounded-lg font-medium transition-all transform hover:scale-105 hover:shadow-lg"
+          >
+            <div className="flex items-center justify-center gap-2">
+              <span>⭐</span>
+              调整总星星数
+            </div>
+          </button>
         </div>
         
         <div className="mt-3 text-xs text-gray-500 text-center">
           <div className="mb-1">📊 导出报表：生成CSV格式，可用Excel打开查看</div>
           <div className="mb-1">💾 数据备份：生成JSON格式，用于完整数据备份</div>
-          <div>📥 恢复数据：从JSON备份文件恢复数据（会覆盖当前数据）</div>
+          <div className="mb-1">📥 恢复数据：从JSON备份文件恢复数据（会覆盖当前数据）</div>
+          <div>⭐ 调整总星星数：需要管理员密码验证（用于修正数据误差）</div>
         </div>
       </div>
+      
+      {/* 弹窗组件 */}
+      <PasswordModal
+        isOpen={showPasswordModal}
+        onClose={handlePasswordClose}
+        onSuccess={handlePasswordSuccess}
+        isFirstTime={!hasPassword()}
+      />
+      
+      <StarsAdjustmentModal
+        isOpen={showStarsModal}
+        onClose={handleStarsModalClose}
+      />
     </div>
   );
 };
