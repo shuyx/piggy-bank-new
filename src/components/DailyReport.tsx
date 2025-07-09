@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { useStore } from '../stores/useStore';
 
 export const DailyReport: React.FC = () => {
-  const { generateDailyReport, exportData, importData } = useStore();
+  const { generateDailyReport, exportData, exportDataAsJSON, importData } = useStore();
   const [showReport, setShowReport] = useState(false);
   const [report, setReport] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportingJSON, setIsExportingJSON] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
 
   const handleGenerateReport = async () => {
@@ -39,7 +40,31 @@ export const DailyReport: React.FC = () => {
     setIsExporting(true);
     
     try {
-      const dataJson = exportData();
+      const dataCsv = exportData();
+      const blob = new Blob(['\ufeff' + dataCsv], { type: 'text/csv;charset=utf-8' }); // 添加BOM以支持中文
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `猪猪银行数据报表_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      alert('数据导出成功！可以用 Excel 或其他表格软件打开查看。');
+    } catch (error) {
+      console.error('导出失败:', error);
+      alert('导出失败，请重试');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportJSON = async () => {
+    setIsExportingJSON(true);
+    
+    try {
+      const dataJson = exportDataAsJSON();
       const blob = new Blob([dataJson], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -50,12 +75,12 @@ export const DailyReport: React.FC = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      alert('数据导出成功！');
+      alert('备份文件导出成功！可用于数据恢复。');
     } catch (error) {
       console.error('导出失败:', error);
       alert('导出失败，请重试');
     } finally {
-      setIsExporting(false);
+      setIsExportingJSON(false);
     }
   };
 
@@ -79,11 +104,11 @@ export const DailyReport: React.FC = () => {
             window.location.reload();
           }, 1000);
         } else {
-          alert('数据导入失败，请检查文件格式是否正确。');
+          alert('数据导入失败，请检查文件格式是否正确。\n提示：导入功能需要 JSON 格式的备份文件。');
         }
       } catch (error) {
         console.error('导入失败:', error);
-        alert('导入失败，请检查文件格式是否正确。');
+        alert('导入失败，请检查文件格式是否正确。\n提示：导入功能需要 JSON 格式的备份文件。');
       } finally {
         setIsImporting(false);
       }
@@ -152,31 +177,53 @@ export const DailyReport: React.FC = () => {
       {/* 数据导出导入区域 */}
       <div className="mt-6 pt-4 border-t border-gray-200">
         <h3 className="text-2xl font-bold text-piggy-blue mb-3">数据管理</h3>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <button
-            onClick={handleExportData}
-            disabled={isExporting}
-            className={`flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-lg font-medium transition-all transform hover:scale-105 ${
-              isExporting ? 'opacity-75 cursor-not-allowed' : 'hover:shadow-lg'
-            }`}
-          >
-            {isExporting ? (
-              <div className="flex items-center justify-center gap-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                导出中...
-              </div>
-            ) : (
-              <div className="flex items-center justify-center gap-2">
-                <span>💾</span>
-                导出数据
-              </div>
-            )}
-          </button>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={handleExportData}
+              disabled={isExporting}
+              className={`flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-lg font-medium transition-all transform hover:scale-105 ${
+                isExporting ? 'opacity-75 cursor-not-allowed' : 'hover:shadow-lg'
+              }`}
+            >
+              {isExporting ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  导出中...
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2">
+                  <span>📊</span>
+                  导出报表(CSV)
+                </div>
+              )}
+            </button>
+            
+            <button
+              onClick={handleExportJSON}
+              disabled={isExportingJSON}
+              className={`flex-1 bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-lg font-medium transition-all transform hover:scale-105 ${
+                isExportingJSON ? 'opacity-75 cursor-not-allowed' : 'hover:shadow-lg'
+              }`}
+            >
+              {isExportingJSON ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  导出中...
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2">
+                  <span>💾</span>
+                  数据备份(JSON)
+                </div>
+              )}
+            </button>
+          </div>
           
           <button
             onClick={handleImportData}
             disabled={isImporting}
-            className={`flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-4 py-2 rounded-lg font-medium transition-all transform hover:scale-105 ${
+            className={`w-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-4 py-2 rounded-lg font-medium transition-all transform hover:scale-105 ${
               isImporting ? 'opacity-75 cursor-not-allowed' : 'hover:shadow-lg'
             }`}
           >
@@ -188,15 +235,16 @@ export const DailyReport: React.FC = () => {
             ) : (
               <div className="flex items-center justify-center gap-2">
                 <span>📥</span>
-                导入数据
+                恢复数据
               </div>
             )}
           </button>
         </div>
         
         <div className="mt-3 text-xs text-gray-500 text-center">
-          <div className="mb-1">💡 导出：下载包含所有历史数据的JSON文件</div>
-          <div>📤 导入：从JSON文件恢复数据（会覆盖当前数据）</div>
+          <div className="mb-1">📊 导出报表：生成CSV格式，可用Excel打开查看</div>
+          <div className="mb-1">💾 数据备份：生成JSON格式，用于完整数据备份</div>
+          <div>📥 恢复数据：从JSON备份文件恢复数据（会覆盖当前数据）</div>
         </div>
       </div>
     </div>

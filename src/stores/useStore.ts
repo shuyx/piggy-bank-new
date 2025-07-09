@@ -59,6 +59,7 @@ export interface AppState {
   clearTodayTasks: () => void;
   loadFromCloud: (cloudData: any) => void;
   exportData: () => string;
+  exportDataAsJSON: () => string;
   importData: (jsonData: string) => Promise<boolean>;
   
   // 任务模板相关方法
@@ -804,6 +805,90 @@ export const useStore = create<AppState>()(
       exportData: () => {
         const state = get();
         
+        // 生成CSV格式的数据
+        const csvData: string[] = [];
+        
+        // 添加标题行
+        csvData.push('日期,任务名称,任务分类,完成状态,星星数量,当日总星星数');
+        
+        // 添加每日任务数据
+        state.dailyRecords.forEach(record => {
+          if (record.tasks.length === 0) {
+            // 如果当天没有任务，也要显示一行
+            csvData.push(`${record.date},无任务,-,-,0,${record.totalStars}`);
+          } else {
+            record.tasks.forEach(task => {
+              const categoryName = {
+                'study': '学习',
+                'exercise': '运动', 
+                'behavior': '行为',
+                'creativity': '创造'
+              }[task.category] || task.category;
+              
+              csvData.push(`${task.date},${task.name},${categoryName},${task.completed ? '已完成' : '未完成'},${task.stars},${record.totalStars}`);
+            });
+          }
+        });
+        
+        // 添加统计信息
+        csvData.push(''); // 空行
+        csvData.push('统计信息');
+        csvData.push(`总星星数,${state.totalStars}`);
+        csvData.push(`连续天数,${state.currentStreak}`);
+        csvData.push(`总记录天数,${state.dailyRecords.length}`);
+        
+        const totalTasks = state.dailyRecords.reduce((sum, record) => sum + record.tasks.length, 0);
+        const totalCompletedTasks = state.dailyRecords.reduce((sum, record) => 
+          sum + record.tasks.filter(t => t.completed).length, 0);
+        const averageStarsPerDay = state.dailyRecords.length > 0 ? state.totalStars / state.dailyRecords.length : 0;
+        const completionRate = totalTasks > 0 ? (totalCompletedTasks / totalTasks) * 100 : 0;
+        
+        csvData.push(`总任务数,${totalTasks}`);
+        csvData.push(`已完成任务数,${totalCompletedTasks}`);
+        csvData.push(`任务完成率,${completionRate.toFixed(2)}%`);
+        csvData.push(`平均每日星星数,${averageStarsPerDay.toFixed(2)}`);
+        
+        // 添加每月统计
+        csvData.push(''); // 空行
+        csvData.push('每月统计');
+        csvData.push('月份,当月星星数,当月任务数,当月完成任务数,当月完成率');
+        
+        const monthlyStats: { [key: string]: { stars: number; tasks: number; completedTasks: number } } = {};
+        state.dailyRecords.forEach(record => {
+          const month = record.date.substring(0, 7); // YYYY-MM
+          if (!monthlyStats[month]) {
+            monthlyStats[month] = { stars: 0, tasks: 0, completedTasks: 0 };
+          }
+          monthlyStats[month].stars += record.totalStars;
+          monthlyStats[month].tasks += record.tasks.length;
+          monthlyStats[month].completedTasks += record.tasks.filter(t => t.completed).length;
+        });
+        
+        Object.entries(monthlyStats)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .forEach(([month, stats]) => {
+            const monthlyCompletionRate = stats.tasks > 0 ? (stats.completedTasks / stats.tasks) * 100 : 0;
+            csvData.push(`${month},${stats.stars},${stats.tasks},${stats.completedTasks},${monthlyCompletionRate.toFixed(2)}%`);
+          });
+        
+        // 添加成就信息
+        csvData.push(''); // 空行
+        csvData.push('成就解锁情况');
+        csvData.push('成就名称,成就描述,解锁状态,解锁日期');
+        
+        state.achievements.forEach(achievement => {
+          const unlockedDate = achievement.unlocked && achievement.unlockedDate 
+            ? new Date(achievement.unlockedDate).toLocaleDateString('zh-CN')
+            : '-';
+          csvData.push(`${achievement.name},${achievement.description},${achievement.unlocked ? '已解锁' : '未解锁'},${unlockedDate}`);
+        });
+        
+        return csvData.join('\n');
+      },
+
+      exportDataAsJSON: () => {
+        const state = get();
+        
         // 计算统计信息
         const totalDays = state.dailyRecords.length;
         const totalTasks = state.dailyRecords.reduce((sum, record) => sum + record.tasks.length, 0);
@@ -823,28 +908,6 @@ export const useStore = create<AppState>()(
           monthlyStats[month].completedTasks += record.tasks.filter(t => t.completed).length;
         });
         
-        // 计算每周统计（最近几周）
-        const weeklyStats: { [key: string]: { stars: number; tasks: number; completedTasks: number } } = {};
-        const today = new Date();
-        for (let i = 0; i < 12; i++) { // 最近12周
-          const weekStart = new Date(today);
-          weekStart.setDate(today.getDate() - (today.getDay() + 7 * i));
-          const weekEnd = new Date(weekStart);
-          weekEnd.setDate(weekStart.getDate() + 6);
-          
-          const weekKey = `${weekStart.toISOString().split('T')[0]}_${weekEnd.toISOString().split('T')[0]}`;
-          weeklyStats[weekKey] = { stars: 0, tasks: 0, completedTasks: 0 };
-          
-          state.dailyRecords.forEach(record => {
-            const recordDate = new Date(record.date);
-            if (recordDate >= weekStart && recordDate <= weekEnd) {
-              weeklyStats[weekKey].stars += record.totalStars;
-              weeklyStats[weekKey].tasks += record.tasks.length;
-              weeklyStats[weekKey].completedTasks += record.tasks.filter(t => t.completed).length;
-            }
-          });
-        }
-        
         const exportData = {
           exportDate: new Date().toISOString().split('T')[0],
           exportTime: new Date().toISOString(),
@@ -860,7 +923,6 @@ export const useStore = create<AppState>()(
             totalCompletedTasks,
             averageStarsPerDay: Math.round(averageStarsPerDay * 100) / 100,
             completionRate: totalTasks > 0 ? Math.round((totalCompletedTasks / totalTasks) * 10000) / 100 : 0,
-            weeklyStats,
             monthlyStats
           }
         };
