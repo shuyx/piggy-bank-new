@@ -159,6 +159,7 @@ export const HomePage: React.FC = () => {
           <WeeklyChart 
             chartData={chartData}
             maxStars={maxStars}
+            dailyRecords={dailyRecords}
           />
 
           {/* 每日报告 */}
