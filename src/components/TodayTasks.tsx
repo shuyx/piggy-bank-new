@@ -101,13 +101,21 @@ export const TodayTasks: React.FC<TodayTasksProps> = ({
                     </button>
                   </>
                 ) : (
-                  <button
-                    id={`complete-btn-${task.id}`}
-                    onClick={() => onCompleteTask(task.id)}
-                    className="bg-piggy-green hover:bg-green-600 text-white px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all transform hover:scale-105"
-                  >
-                    ✅ 完成
-                  </button>
+                  <>
+                    <button
+                      id={`complete-btn-${task.id}`}
+                      onClick={() => onCompleteTask(task.id)}
+                      className="bg-piggy-green hover:bg-green-600 text-white px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all transform hover:scale-105"
+                    >
+                      ✅ 完成
+                    </button>
+                    <button
+                      onClick={() => onDeleteTask(task.id, task.name)}
+                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all transform hover:scale-105"
+                    >
+                      🗑️ 删除
+                    </button>
+                  </>
                 )}
               </div>
             </div>
