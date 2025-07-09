@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 interface ChartData {
   date: string;
@@ -20,8 +20,6 @@ interface WeeklyChartProps {
 }
 
 export const WeeklyChart: React.FC<WeeklyChartProps> = ({ chartData, maxStars, dailyRecords }) => {
-  const [sliderPosition, setSliderPosition] = useState(0); // 滑块位置 (0-100)
-  const [isDragging, setIsDragging] = useState(false);
   const [weekIndex, setWeekIndex] = useState(0); // 当前周索引 (0=本周, 1=上周, 2=两周前, 3=三周前)
   
   // 生成按周分组的历史数据（最近4周）
@@ -68,68 +66,14 @@ export const WeeklyChart: React.FC<WeeklyChartProps> = ({ chartData, maxStars, d
   // 计算当前显示数据的最大星星数
   const currentMaxStars = Math.max(...visibleDaysData.map(d => d.stars), 10);
   
-  // 磁吸到周位置
-  const snapToWeekPosition = (position: number) => {
-    const weekPositions = [0, 33.33, 66.67, 100]; // 4个周位置
-    const closest = weekPositions.reduce((prev, curr) => 
-      Math.abs(curr - position) < Math.abs(prev - position) ? curr : prev
-    );
-    const newWeekIndex = weekPositions.indexOf(closest);
-    setWeekIndex(newWeekIndex);
-    setSliderPosition(closest);
+  // 页面切换功能
+  const handlePrevious = () => {
+    setWeekIndex((prev) => (prev > 0 ? prev - 1 : weeksData.length - 1));
   };
   
-  // 处理滑块拖动
-  const handleSliderMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDragging) return;
-    
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const position = ((clientX - rect.left) / rect.width) * 100;
-    setSliderPosition(Math.max(0, Math.min(100, position)));
+  const handleNext = () => {
+    setWeekIndex((prev) => (prev < weeksData.length - 1 ? prev + 1 : 0));
   };
-  
-  const handleSliderStart = (e: React.MouseEvent | React.TouchEvent) => {
-    setIsDragging(true);
-    handleSliderMove(e);
-  };
-  
-  const handleSliderEnd = () => {
-    setIsDragging(false);
-    snapToWeekPosition(sliderPosition);
-  };
-  
-  
-  // 添加全局事件监听器
-  useEffect(() => {
-    if (isDragging) {
-      const handleMouseMove = (e: MouseEvent) => {
-        const sliderElement = document.querySelector('.slider-container');
-        if (sliderElement) {
-          const rect = sliderElement.getBoundingClientRect();
-          const position = ((e.clientX - rect.left) / rect.width) * 100;
-          setSliderPosition(Math.max(0, Math.min(100, position)));
-        }
-      };
-      
-      const handleMouseUp = () => {
-        setIsDragging(false);
-        snapToWeekPosition(sliderPosition);
-      };
-      
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      document.addEventListener('touchmove', handleMouseMove as any);
-      document.addEventListener('touchend', handleMouseUp);
-      
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-        document.removeEventListener('touchmove', handleMouseMove as any);
-        document.removeEventListener('touchend', handleMouseUp);
-      };
-    }
-  }, [isDragging, sliderPosition]);
   
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow">
@@ -145,6 +89,30 @@ export const WeeklyChart: React.FC<WeeklyChartProps> = ({ chartData, maxStars, d
             星星获得趋势
           </h3>
           <div className="relative">
+            {/* 导航箭头 */}
+            {weeksData.length > 1 && (
+              <>
+                <button
+                  onClick={handlePrevious}
+                  className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-2 sm:-translate-x-4 z-10 bg-white rounded-full shadow-lg p-1 sm:p-2 hover:bg-gray-100 transition-colors"
+                  aria-label="上一周"
+                >
+                  <svg className="w-4 h-4 sm:w-6 sm:h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <button
+                  onClick={handleNext}
+                  className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-2 sm:translate-x-4 z-10 bg-white rounded-full shadow-lg p-1 sm:p-2 hover:bg-gray-100 transition-colors"
+                  aria-label="下一周"
+                >
+                  <svg className="w-4 h-4 sm:w-6 sm:h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </>
+            )}
+            
             <div className="flex items-end justify-between gap-2 h-32 bg-gradient-to-t from-yellow-50 to-transparent rounded-lg p-3">
               {visibleDaysData.map((day, index) => (
                 <div key={index} className="flex flex-col items-center flex-1">
@@ -162,42 +130,21 @@ export const WeeklyChart: React.FC<WeeklyChartProps> = ({ chartData, maxStars, d
               ))}
             </div>
             
-            {/* 滑块控件 */}
-            <div className="mt-4">
-              <div 
-                className="slider-container relative w-full h-8 cursor-pointer"
-                onMouseDown={handleSliderStart}
-                onTouchStart={handleSliderStart}
-                onMouseMove={handleSliderMove}
-                onTouchMove={handleSliderMove}
-              >
-                {/* 滑块轨道背景 */}
-                <div className="absolute top-1/2 left-0 w-full h-3 bg-gray-300 rounded-full transform -translate-y-1/2 border border-gray-400"></div>
-                
-                {/* 滑块进度条 */}
-                <div 
-                  className="absolute top-1/2 left-0 h-3 bg-blue-500 rounded-full transform -translate-y-1/2 transition-all duration-300"
-                  style={{ width: `${sliderPosition}%` }}
-                ></div>
-                
-                {/* 周位置标记点 */}
-                {[0, 33.33, 66.67, 100].map((position, index) => (
-                  <div
+            {/* 分页指示器 */}
+            {weeksData.length > 1 && (
+              <div className="flex justify-center mt-3 sm:mt-4 gap-1">
+                {weeksData.map((_, index) => (
+                  <button
                     key={index}
-                    className="absolute top-1/2 w-1 h-1 bg-gray-500 rounded-full transform -translate-y-1/2 -translate-x-1/2"
-                    style={{ left: `${position}%` }}
+                    onClick={() => setWeekIndex(index)}
+                    className={`w-2 h-2 rounded-full transition-colors ${
+                      index === weekIndex ? 'bg-piggy-orange' : 'bg-gray-300'
+                    }`}
+                    aria-label={`显示第${index + 1}周数据`}
                   />
                 ))}
-                
-                {/* 滑块按钮 */}
-                <div 
-                  className={`absolute top-1/2 w-6 h-6 bg-blue-600 rounded-full shadow-lg transform -translate-y-1/2 -translate-x-1/2 cursor-grab border-2 border-white ${isDragging ? 'cursor-grabbing scale-110' : ''} transition-all duration-200`}
-                  style={{ left: `${sliderPosition}%` }}
-                >
-                  <div className="absolute inset-1 bg-blue-400 rounded-full"></div>
-                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
