@@ -16,11 +16,9 @@ export const AchievementBadges: React.FC<AchievementBadgesProps> = ({
     if (typeof window !== 'undefined') {
       const width = window.innerWidth;
       
-      // 手机端：根据宽度调整显示数量
-      if (width < 480) {
-        return 2; // 小屏手机显示2个徽章，1x2布局
-      } else if (width < 640) {
-        return 4; // 中等手机显示4个徽章，2x2布局
+      // 手机端：统一显示4个徽章
+      if (width < 640) {
+        return 4; // 手机显示4个徽章，2x2布局
       }
       
       // 平板和桌面：保持5个徽章
@@ -90,7 +88,6 @@ export const AchievementBadges: React.FC<AchievementBadgesProps> = ({
 
         {/* 响应式网格布局 */}
         <div className={`grid gap-3 p-2 ${
-          groupSize === 2 ? 'grid-cols-1 min-h-[280px]' : 
           groupSize === 4 ? 'grid-cols-2 min-h-[240px]' : 
           'grid-cols-5 min-h-[120px]'
         }`}>
@@ -100,9 +97,7 @@ export const AchievementBadges: React.FC<AchievementBadgesProps> = ({
               <div
                 key={achievement?.id || `placeholder-${index}`}
                 className={`${
-                  groupSize === 2 ? 'aspect-[3/2] max-w-sm mx-auto' : 
-                  groupSize === 4 ? 'aspect-square' : 
-                  'aspect-square'
+                  groupSize === 4 ? 'aspect-square' : 'aspect-square'
                 } flex flex-col items-center justify-center p-3 sm:p-3 rounded-lg transition-all duration-300 hover:scale-105 ${
                   achievement ? (
                     achievement.unlocked
@@ -114,40 +109,30 @@ export const AchievementBadges: React.FC<AchievementBadgesProps> = ({
                 {achievement && (
                   <>
                     <div className={`${
-                      groupSize === 2 ? 'text-4xl' : 
-                      groupSize === 4 ? 'text-3xl' : 
-                      'text-lg sm:text-2xl'
+                      groupSize === 4 ? 'text-3xl' : 'text-lg sm:text-2xl'
                     } mb-2 ${achievement.unlocked ? 'animate-pulse' : ''}`}>
                       {achievement.icon}
                     </div>
                     <h3 className={`font-bold text-center leading-tight mb-2 ${
-                      groupSize === 2 ? 'text-base' : 
-                      groupSize === 4 ? 'text-sm' : 
-                      'text-xs'
+                      groupSize === 4 ? 'text-sm' : 'text-xs'
                     }`}>
                       {achievement.name}
                     </h3>
                     <p className={`text-gray-600 text-center leading-tight line-clamp-2 mb-1 ${
-                      groupSize === 2 ? 'text-sm block' : 
-                      groupSize === 4 ? 'text-xs block' : 
-                      'text-xs hidden sm:block'
+                      groupSize === 4 ? 'text-xs block' : 'text-xs hidden sm:block'
                     }`}>
                       {achievement.description}
                     </p>
                     {achievement.unlocked && achievement.unlockedDate && (
                       <p className={`text-piggy-green font-medium text-center ${
-                        groupSize === 2 ? 'text-sm block' : 
-                        groupSize === 4 ? 'text-xs block' : 
-                        'text-xs hidden sm:block'
+                        groupSize === 4 ? 'text-xs block' : 'text-xs hidden sm:block'
                       }`}>
                         ✅ {new Date(achievement.unlockedDate).toLocaleDateString('zh-CN')}
                       </p>
                     )}
                     {!achievement.unlocked && (
                       <p className={`text-gray-400 text-center ${
-                        groupSize === 2 ? 'text-sm block' : 
-                        groupSize === 4 ? 'text-xs block' : 
-                        'text-xs hidden sm:block'
+                        groupSize === 4 ? 'text-xs block' : 'text-xs hidden sm:block'
                       }`}>🔒 未解锁</p>
                     )}
                   </>
