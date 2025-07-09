@@ -90,45 +90,39 @@ export const TodayTasks: React.FC<TodayTasksProps> = ({
                   : `${getCategoryBgColor(task.category)} border-2 ${getCategoryBorderColor(task.category)} ${getCategoryHoverColor(task.category)}`
               }`}
             >
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                  <span className={`text-xl sm:text-2xl ${task.completed ? 'grayscale' : ''}`}>
+              {/* 任务标题层 */}
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <span className={`text-xl ${task.completed ? 'grayscale' : ''}`}>
                     {getCategoryIcon(task.category)}
                   </span>
-                  <div className="flex-1 min-w-0">
-                    <span className={`font-medium text-sm sm:text-base ${task.completed ? 'line-through text-gray-500' : 'text-gray-800'}`}>
-                      {task.name}
-                    </span>
-                    <div className="flex items-center gap-2 mt-1 flex-wrap">
-                      <span className={`text-xs px-1.5 py-0.5 rounded border hidden sm:inline ${getCategoryColor(task.category)}`}>
-                        {task.category === 'study' ? '学习' :
-                         task.category === 'exercise' ? '运动' :
-                         task.category === 'behavior' ? '行为' : '创造'}
-                      </span>
-                      <span className="text-xs text-gray-500 flex items-center gap-1">
-                        <span>⭐</span>
-                        <span>{task.stars}</span>
-                      </span>
-                    </div>
-                  </div>
+                  <span className={`font-medium text-base ${task.completed ? 'line-through text-gray-500' : 'text-gray-800'} flex-1 min-w-0`}>
+                    {task.name}
+                  </span>
                 </div>
                 
-                {/* 任务操作按钮 */}
-                <div className="flex gap-1 sm:gap-2 flex-shrink-0">
+                {/* 任务操作按钮 - 只显示图标 */}
+                <div className="flex gap-1 flex-shrink-0">
                   {task.completed ? (
                     <>
                       <button
                         id={`restore-btn-${task.id}`}
                         onClick={() => onUncompleteTask(task.id)}
-                        className="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded text-xs font-medium transition-all transform hover:scale-105"
+                        className="p-1.5 text-yellow-600 hover:bg-yellow-100 rounded transition-colors"
+                        title="恢复任务"
                       >
-                        🔄 恢复
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
                       </button>
                       <button
                         onClick={() => onDeleteTask(task.id, task.name)}
-                        className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs font-medium transition-all transform hover:scale-105"
+                        className="p-1.5 text-red-600 hover:bg-red-100 rounded transition-colors"
+                        title="删除任务"
                       >
-                        🗑️ 删除
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
                       </button>
                     </>
                   ) : (
@@ -136,19 +130,38 @@ export const TodayTasks: React.FC<TodayTasksProps> = ({
                       <button
                         id={`complete-btn-${task.id}`}
                         onClick={() => onCompleteTask(task.id)}
-                        className="bg-piggy-green hover:bg-green-600 text-white px-2 py-1 rounded text-xs font-medium transition-all transform hover:scale-105"
+                        className="p-1.5 text-green-600 hover:bg-green-100 rounded transition-colors"
+                        title="完成任务"
                       >
-                        ✅ 完成
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
                       </button>
                       <button
                         onClick={() => onDeleteTask(task.id, task.name)}
-                        className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs font-medium transition-all transform hover:scale-105"
+                        className="p-1.5 text-red-600 hover:bg-red-100 rounded transition-colors"
+                        title="删除任务"
                       >
-                        🗑️ 删除
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
                       </button>
                     </>
                   )}
                 </div>
+              </div>
+              
+              {/* 任务详情层 */}
+              <div className="flex items-center gap-2 mt-2">
+                <span className={`text-xs px-2 py-1 rounded border ${getCategoryColor(task.category)}`}>
+                  {task.category === 'study' ? '学习' :
+                   task.category === 'exercise' ? '运动' :
+                   task.category === 'behavior' ? '行为' : '创造'}
+                </span>
+                <span className="text-xs text-gray-500 flex items-center gap-1">
+                  <span>⭐</span>
+                  <span>{task.stars}</span>
+                </span>
               </div>
             </div>
           ))
