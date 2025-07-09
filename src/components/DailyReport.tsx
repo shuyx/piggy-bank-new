@@ -151,7 +151,7 @@ export const DailyReport: React.FC = () => {
 
       {/* 数据导出导入区域 */}
       <div className="mt-6 pt-4 border-t border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-700 mb-3">数据管理</h3>
+        <h3 className="text-2xl font-bold text-piggy-blue mb-3">数据管理</h3>
         <div className="flex flex-col sm:flex-row gap-3">
           <button
             onClick={handleExportData}
