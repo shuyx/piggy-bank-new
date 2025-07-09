@@ -30,15 +30,25 @@ export const TaskManager: React.FC = () => {
   };
 
   const categoryOptions = [
-    { value: 'study', label: '📚 学习', color: 'bg-blue-100 text-blue-800' },
-    { value: 'exercise', label: '🏃 运动', color: 'bg-green-100 text-green-800' },
-    { value: 'behavior', label: '😊 行为', color: 'bg-yellow-100 text-yellow-800' },
-    { value: 'creativity', label: '🎨 创造', color: 'bg-purple-100 text-purple-800' }
+    { value: 'study', label: '📚 学习', color: 'bg-blue-100 text-blue-800', bgColor: 'bg-blue-50', borderColor: 'border-blue-200' },
+    { value: 'exercise', label: '🏃 运动', color: 'bg-green-100 text-green-800', bgColor: 'bg-green-50', borderColor: 'border-green-200' },
+    { value: 'behavior', label: '😊 行为', color: 'bg-amber-100 text-amber-800', bgColor: 'bg-amber-50', borderColor: 'border-amber-200' },
+    { value: 'creativity', label: '🎨 创造', color: 'bg-purple-100 text-purple-800', bgColor: 'bg-purple-50', borderColor: 'border-purple-200' }
   ];
 
   const getCategoryLabel = (category: string) => {
     const option = categoryOptions.find(opt => opt.value === category);
     return option ? option.label : category;
+  };
+
+  const getCategoryBgColor = (category: string) => {
+    const option = categoryOptions.find(opt => opt.value === category);
+    return option ? option.bgColor : 'bg-gray-50';
+  };
+
+  const getCategoryBorderColor = (category: string) => {
+    const option = categoryOptions.find(opt => opt.value === category);
+    return option ? option.borderColor : 'border-gray-200';
   };
 
   return (
@@ -157,7 +167,7 @@ export const TaskManager: React.FC = () => {
                 {activeTemplates.map((template) => (
                   <div
                     key={template.id}
-                    className="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors"
+                    className={`${getCategoryBgColor(template.category)} rounded-lg p-3 border-2 ${getCategoryBorderColor(template.category)} hover:shadow-md transition-all`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1">

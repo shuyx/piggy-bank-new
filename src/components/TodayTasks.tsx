@@ -28,9 +28,39 @@ export const TodayTasks: React.FC<TodayTasksProps> = ({
     switch (category) {
       case 'study': return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'exercise': return 'bg-green-100 text-green-800 border-green-200';
-      case 'behavior': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'behavior': return 'bg-amber-100 text-amber-800 border-amber-200';
       case 'creativity': return 'bg-purple-100 text-purple-800 border-purple-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getCategoryBgColor = (category: string) => {
+    switch (category) {
+      case 'study': return 'bg-blue-50';
+      case 'exercise': return 'bg-green-50';
+      case 'behavior': return 'bg-amber-50';
+      case 'creativity': return 'bg-purple-50';
+      default: return 'bg-gray-50';
+    }
+  };
+
+  const getCategoryBorderColor = (category: string) => {
+    switch (category) {
+      case 'study': return 'border-blue-200';
+      case 'exercise': return 'border-green-200';
+      case 'behavior': return 'border-amber-200';
+      case 'creativity': return 'border-purple-200';
+      default: return 'border-gray-200';
+    }
+  };
+
+  const getCategoryHoverColor = (category: string) => {
+    switch (category) {
+      case 'study': return 'hover:bg-blue-100 hover:border-blue-300';
+      case 'exercise': return 'hover:bg-green-100 hover:border-green-300';
+      case 'behavior': return 'hover:bg-amber-100 hover:border-amber-300';
+      case 'creativity': return 'hover:bg-purple-100 hover:border-purple-300';
+      default: return 'hover:bg-gray-100 hover:border-gray-300';
     }
   };
 
@@ -56,8 +86,8 @@ export const TodayTasks: React.FC<TodayTasksProps> = ({
               id={`task-${task.id}`}
               className={`p-4 rounded-xl border-2 transition-all transform hover:scale-[1.02] ${
                 task.completed
-                  ? 'bg-green-50 opacity-75 border-2 border-green-200'
-                  : 'bg-piggy-cream hover:bg-yellow-100 border-2 border-transparent hover:border-yellow-200'
+                  ? 'bg-gray-100 opacity-75 border-gray-300'
+                  : `${getCategoryBgColor(task.category)} border-2 ${getCategoryBorderColor(task.category)} ${getCategoryHoverColor(task.category)}`
               }`}
             >
               <div className="flex items-center justify-between gap-3">
