@@ -15,7 +15,7 @@ interface WeeklyChartProps {
 export const WeeklyChart: React.FC<WeeklyChartProps> = ({ chartData, maxStars }) => {
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-      <h2 className="text-2xl font-bold text-piggy-blue mb-6 text-center">本周表现</h2>
+      <h2 className="text-2xl font-bold text-piggy-blue mb-6">本周表现</h2>
       
       <div className="space-y-6">
         {/* 星星趋势图 */}
