@@ -11,9 +11,36 @@ export const AchievementBadges: React.FC<AchievementBadgesProps> = ({
   achievements,
   unlockedCount
 }) => {
-  // 固定显示5个成就徽章
-  const groupSize = 5;
+  // 根据屏幕宽度动态调整显示数量
+  const getGroupSize = () => {
+    if (typeof window !== 'undefined') {
+      const width = window.innerWidth;
+      
+      // 手机端：根据宽度调整显示数量
+      if (width < 480) {
+        return 2; // 小屏手机显示2个徽章，1x2布局
+      } else if (width < 640) {
+        return 4; // 中等手机显示4个徽章，2x2布局
+      }
+      
+      // 平板和桌面：保持5个徽章
+      return 5;
+    }
+    return 4;
+  };
+
+  const [groupSize, setGroupSize] = React.useState(getGroupSize());
   const [currentGroupIndex, setCurrentGroupIndex] = React.useState(0);
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      setGroupSize(getGroupSize());
+      setCurrentGroupIndex(0); // 重置到第一组
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const achievementGroups: Achievement[][] = [];
   for (let i = 0; i < achievements.length; i += groupSize) {
@@ -61,14 +88,22 @@ export const AchievementBadges: React.FC<AchievementBadgesProps> = ({
           </>
         )}
 
-        {/* 固定网格布局 */}
-        <div className="grid grid-cols-5 gap-2 sm:gap-3 p-1 sm:p-2 min-h-[120px]">
-          {Array.from({ length: 5 }, (_, index) => {
+        {/* 响应式网格布局 */}
+        <div className={`grid gap-3 p-2 ${
+          groupSize === 2 ? 'grid-cols-1 min-h-[280px]' : 
+          groupSize === 4 ? 'grid-cols-2 min-h-[240px]' : 
+          'grid-cols-5 min-h-[120px]'
+        }`}>
+          {Array.from({ length: groupSize }, (_, index) => {
             const achievement = achievementGroups[currentGroupIndex]?.[index];
             return (
               <div
                 key={achievement?.id || `placeholder-${index}`}
-                className={`aspect-square flex flex-col items-center justify-center p-1 sm:p-2 rounded-lg transition-all duration-300 hover:scale-105 ${
+                className={`${
+                  groupSize === 2 ? 'aspect-[3/2] max-w-sm mx-auto' : 
+                  groupSize === 4 ? 'aspect-square' : 
+                  'aspect-square'
+                } flex flex-col items-center justify-center p-3 sm:p-3 rounded-lg transition-all duration-300 hover:scale-105 ${
                   achievement ? (
                     achievement.unlocked
                       ? 'bg-yellow-100 scale-105 shadow-md border-2 border-yellow-300'
@@ -78,22 +113,42 @@ export const AchievementBadges: React.FC<AchievementBadgesProps> = ({
               >
                 {achievement && (
                   <>
-                    <div className={`text-lg sm:text-2xl mb-1 ${achievement.unlocked ? 'animate-pulse' : ''}`}>
+                    <div className={`${
+                      groupSize === 2 ? 'text-4xl' : 
+                      groupSize === 4 ? 'text-3xl' : 
+                      'text-lg sm:text-2xl'
+                    } mb-2 ${achievement.unlocked ? 'animate-pulse' : ''}`}>
                       {achievement.icon}
                     </div>
-                    <h3 className="font-bold text-xs mb-1 text-center leading-tight">
+                    <h3 className={`font-bold text-center leading-tight mb-2 ${
+                      groupSize === 2 ? 'text-base' : 
+                      groupSize === 4 ? 'text-sm' : 
+                      'text-xs'
+                    }`}>
                       {achievement.name}
                     </h3>
-                    <p className="text-xs text-gray-600 mb-1 text-center leading-tight line-clamp-2 hidden sm:block">
+                    <p className={`text-gray-600 text-center leading-tight line-clamp-2 mb-1 ${
+                      groupSize === 2 ? 'text-sm block' : 
+                      groupSize === 4 ? 'text-xs block' : 
+                      'text-xs hidden sm:block'
+                    }`}>
                       {achievement.description}
                     </p>
                     {achievement.unlocked && achievement.unlockedDate && (
-                      <p className="text-xs text-piggy-green font-medium text-center hidden sm:block">
+                      <p className={`text-piggy-green font-medium text-center ${
+                        groupSize === 2 ? 'text-sm block' : 
+                        groupSize === 4 ? 'text-xs block' : 
+                        'text-xs hidden sm:block'
+                      }`}>
                         ✅ {new Date(achievement.unlockedDate).toLocaleDateString('zh-CN')}
                       </p>
                     )}
                     {!achievement.unlocked && (
-                      <p className="text-xs text-gray-400 text-center hidden sm:block">🔒 未解锁</p>
+                      <p className={`text-gray-400 text-center ${
+                        groupSize === 2 ? 'text-sm block' : 
+                        groupSize === 4 ? 'text-xs block' : 
+                        'text-xs hidden sm:block'
+                      }`}>🔒 未解锁</p>
                     )}
                   </>
                 )}
