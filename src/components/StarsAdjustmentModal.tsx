@@ -41,7 +41,10 @@ export const StarsAdjustmentModal: React.FC<StarsAdjustmentModalProps> = ({
       adjustTotalStars(starsValue);
       
       // 显示成功消息
-      alert(`总星星数已调整为 ${starsValue}`);
+      setTimeout(() => {
+        alert(`✅ 总星星数已调整为 ${starsValue}\n${starsValue > totalStars ? '🎉 恭喜！可能解锁了新成就，请查看成就徽章！' : '📝 星星数已更新完毕'}`);
+      }, 100);
+      
       handleClose();
       
     } catch (error) {

@@ -189,6 +189,48 @@ const initialAchievements: Achievement[] = [
   }
 ];
 
+// 辅助函数：检查基于总星星数的成就（用于总星星数调整）
+const checkStarBasedAchievements = (state: any, newTotalStars: number) => {
+  const newAchievements = [...state.achievements];
+  let hasNewUnlock = false;
+
+  // 检查第一颗星星成就
+  if (newTotalStars >= 1 && !newAchievements.find(a => a.id === 'first-star')?.unlocked) {
+    const achievementIndex = newAchievements.findIndex(a => a.id === 'first-star');
+    newAchievements[achievementIndex] = {
+      ...newAchievements[achievementIndex],
+      unlocked: true,
+      unlockedDate: new Date().toISOString()
+    };
+    hasNewUnlock = true;
+  }
+
+  // 检查星星收集成就（多个等级）
+  const starMilestones = [
+    { stars: 50, id: 'star-collector-50' },
+    { stars: 100, id: 'star-collector-100' },
+    { stars: 200, id: 'star-collector-200' },
+    { stars: 300, id: 'star-collector-300' },
+    { stars: 500, id: 'star-collector-500' },
+    { stars: 1000, id: 'star-collector-1000' },
+    { stars: 2000, id: 'star-collector-2000' }
+  ];
+
+  starMilestones.forEach(milestone => {
+    if (newTotalStars >= milestone.stars && !newAchievements.find(a => a.id === milestone.id)?.unlocked) {
+      const achievementIndex = newAchievements.findIndex(a => a.id === milestone.id);
+      newAchievements[achievementIndex] = {
+        ...newAchievements[achievementIndex],
+        unlocked: true,
+        unlockedDate: new Date().toISOString()
+      };
+      hasNewUnlock = true;
+    }
+  });
+
+  return { newAchievements, hasNewUnlock };
+};
+
 // 辅助函数：检查成就解锁条件
 const checkAchievements = (state: any, newTotalStars: number, todayTasks: Task[]) => {
   const newAchievements = [...state.achievements];
@@ -836,9 +878,39 @@ export const useStore = create<AppState>()(
           return;
         }
         
-        const oldTotal = get().totalStars;
-        set({ totalStars: newTotal });
+        const state = get();
+        const oldTotal = state.totalStars;
+        
+        // 检查基于总星星数的成就
+        const { newAchievements, hasNewUnlock } = checkStarBasedAchievements(state, newTotal);
+        
+        // 更新状态
+        set({ 
+          totalStars: newTotal,
+          achievements: newAchievements
+        });
+        
         console.log(`总星星数已调整: ${oldTotal} → ${newTotal}`);
+        
+        // 如果有新成就解锁，显示提示
+        if (hasNewUnlock) {
+          const unlockedToday = newAchievements.filter(a => 
+            a.unlocked && 
+            a.unlockedDate && 
+            new Date(a.unlockedDate).toDateString() === new Date().toDateString()
+          );
+          
+          if (unlockedToday.length > 0) {
+            console.log('🎉 解锁新成就:', unlockedToday.map(a => `${a.icon} ${a.name}`).join(', '));
+            
+            // 创建成就解锁通知
+            unlockedToday.forEach(achievement => {
+              setTimeout(() => {
+                alert(`🎉 成就解锁！\n${achievement.icon} ${achievement.name}\n${achievement.description}`);
+              }, 100);
+            });
+          }
+        }
       },
 
       exportData: () => {
