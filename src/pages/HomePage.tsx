@@ -4,7 +4,7 @@ import { useStore } from '../stores/useStore';
 import { TodayStats } from '../components/TodayStats';
 import { TodayTasks } from '../components/TodayTasks';
 import { WeeklyChart } from '../components/WeeklyChart';
-import { CelebrationAnimation } from '../components/CelebrationAnimation';
+import { PiggyBankCelebration } from '../components/PiggyBankCelebration';
 import { AchievementBadges } from '../components/AchievementBadges';
 import { TaskManager } from '../components/TaskManager';
 import { DailyReport } from '../components/DailyReport';
@@ -31,6 +31,7 @@ export const HomePage: React.FC = () => {
   } = useStore();
 
   const [celebrationVisible, setCelebrationVisible] = useState(false);
+  const [celebrationStars, setCelebrationStars] = useState(0);
   // 暂时注释掉认证相关状态
   // const [showAuthModal, setShowAuthModal] = useState(false);
   // const [user, setUser] = useState(null);
@@ -49,16 +50,20 @@ export const HomePage: React.FC = () => {
     console.log('完成任务:', taskId);
     
     try {
+      // 找到任务并获取星星数
+      const task = todayTasks.find(t => t.id === taskId);
+      const stars = task?.stars || 1;
+      
       completeTask(taskId);
       
-      // 显示庆祝动画
+      // 显示猪猪存钱罐庆祝动画
+      setCelebrationStars(stars);
       setCelebrationVisible(true);
-      setTimeout(() => setCelebrationVisible(false), 2000);
       
     } catch (error) {
       console.error('完成任务时出错:', error);
     }
-  }, [completeTask]);
+  }, [completeTask, todayTasks]);
 
   const handleUncompleteTask = useCallback((taskId: string) => {
     console.log('恢复任务:', taskId);
@@ -107,8 +112,12 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-100 via-blue-50 to-yellow-50 p-4 relative">
-      {/* 庆祝动画 */}
-      <CelebrationAnimation visible={celebrationVisible} />
+      {/* 猪猪存钱罐庆祝动画 */}
+      <PiggyBankCelebration 
+        visible={celebrationVisible} 
+        starsCount={celebrationStars}
+        onComplete={() => setCelebrationVisible(false)}
+      />
 
       <div className="max-w-6xl mx-auto">
         {/* 顶部标题栏 */}
