@@ -90,7 +90,7 @@ export const TaskManager: React.FC = () => {
                       setTaskStars(99);
                     }
                   }}
-                  className="w-20 px-3 py-2 rounded-lg border border-gray-300 text-center font-bold text-piggy-orange focus:outline-none focus:border-piggy-blue focus:ring-2 focus:ring-piggy-blue focus:ring-opacity-20"
+                  className="w-16 px-2 py-1.5 rounded-lg border border-gray-300 text-center font-bold text-piggy-orange focus:outline-none focus:border-piggy-blue focus:ring-2 focus:ring-piggy-blue focus:ring-opacity-20"
                 />
               </div>
               <div className="flex gap-1 flex-wrap">
