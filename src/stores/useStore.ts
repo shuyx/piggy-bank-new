@@ -10,6 +10,16 @@ export interface Task {
   date: string;
 }
 
+export interface TaskTemplate {
+  id: string;
+  name: string;
+  category: 'study' | 'exercise' | 'behavior' | 'creativity';
+  stars: number;
+  isDeleted: boolean;
+  createdDate: string;
+  usageCount: number;
+}
+
 export interface Achievement {
   id: string;
   name: string;
@@ -33,6 +43,7 @@ export interface AppState {
   dailyRecords: DailyRecord[];
   achievements: Achievement[];
   customTasks: Task[];
+  taskTemplates: TaskTemplate[];
   
   // 操作方法
   addTask: (task: Omit<Task, 'id' | 'date'>) => void;
@@ -47,6 +58,14 @@ export interface AppState {
   getWeeklyStats: () => { totalStars: number; completionRate: number };
   clearTodayTasks: () => void;
   loadFromCloud: (cloudData: any) => void;
+  
+  // 任务模板相关方法
+  saveTaskTemplate: (name: string, category: Task['category'], stars: number) => void;
+  deleteTaskTemplate: (templateId: string) => void;
+  restoreTaskTemplate: (templateId: string) => void;
+  addTaskFromTemplate: (templateId: string) => void;
+  getActiveTaskTemplates: () => TaskTemplate[];
+  getDeletedTaskTemplates: () => TaskTemplate[];
 }
 
 // 初始成就列表
@@ -287,6 +306,7 @@ export const useStore = create<AppState>()(
       dailyRecords: [],
       achievements: initialAchievements,
       customTasks: [],
+      taskTemplates: [],
 
       addTask: (taskData) => {
         const newTask: Task = {
@@ -571,6 +591,10 @@ export const useStore = create<AppState>()(
           stars,
           completed: false
         };
+        
+        // 同时保存为任务模板
+        get().saveTaskTemplate(name, category, stars);
+        
         get().addTask(newTask);
       },
 
@@ -677,9 +701,102 @@ export const useStore = create<AppState>()(
           currentStreak: cloudData.current_streak || 0,
           dailyRecords: cloudData.daily_records || [],
           achievements: cloudData.achievements || initialAchievements,
-          customTasks: cloudData.custom_tasks || []
+          customTasks: cloudData.custom_tasks || [],
+          taskTemplates: cloudData.task_templates || []
         }));
         console.log('useStore: 云端数据加载完成');
+      },
+
+      // 任务模板相关方法
+      saveTaskTemplate: (name, category, stars) => {
+        console.log('useStore: 保存任务模板:', name, '分类:', category, '星星:', stars);
+        set((state) => {
+          // 检查是否已存在相同的模板
+          const existingTemplate = state.taskTemplates.find(
+            t => t.name === name && t.category === category && t.stars === stars && !t.isDeleted
+          );
+          
+          if (existingTemplate) {
+            // 如果存在，增加使用次数
+            return {
+              taskTemplates: state.taskTemplates.map(t =>
+                t.id === existingTemplate.id
+                  ? { ...t, usageCount: t.usageCount + 1 }
+                  : t
+              )
+            };
+          } else {
+            // 如果不存在，创建新模板
+            const newTemplate: TaskTemplate = {
+              id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+              name,
+              category,
+              stars,
+              isDeleted: false,
+              createdDate: new Date().toISOString(),
+              usageCount: 1
+            };
+            
+            return {
+              taskTemplates: [...state.taskTemplates, newTemplate]
+            };
+          }
+        });
+      },
+
+      deleteTaskTemplate: (templateId) => {
+        console.log('useStore: 删除任务模板:', templateId);
+        set((state) => ({
+          taskTemplates: state.taskTemplates.map(t =>
+            t.id === templateId ? { ...t, isDeleted: true } : t
+          )
+        }));
+      },
+
+      restoreTaskTemplate: (templateId) => {
+        console.log('useStore: 恢复任务模板:', templateId);
+        set((state) => ({
+          taskTemplates: state.taskTemplates.map(t =>
+            t.id === templateId ? { ...t, isDeleted: false } : t
+          )
+        }));
+      },
+
+      addTaskFromTemplate: (templateId) => {
+        console.log('useStore: 从模板添加任务:', templateId);
+        const template = get().taskTemplates.find(t => t.id === templateId);
+        if (template && !template.isDeleted) {
+          // 增加使用次数
+          set((state) => ({
+            taskTemplates: state.taskTemplates.map(t =>
+              t.id === templateId ? { ...t, usageCount: t.usageCount + 1 } : t
+            )
+          }));
+          
+          // 添加任务到今日任务
+          const newTask = {
+            name: template.name,
+            category: template.category,
+            stars: template.stars,
+            completed: false
+          };
+          get().addTask(newTask);
+        }
+      },
+
+      getActiveTaskTemplates: () => {
+        const templates = get().taskTemplates.filter(t => !t.isDeleted);
+        // 按使用次数和创建时间排序
+        return templates.sort((a, b) => {
+          if (a.usageCount !== b.usageCount) {
+            return b.usageCount - a.usageCount; // 使用次数多的在前
+          }
+          return new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime(); // 创建时间新的在前
+        });
+      },
+
+      getDeletedTaskTemplates: () => {
+        return get().taskTemplates.filter(t => t.isDeleted);
       }
     }),
     {
@@ -709,6 +826,7 @@ export const useStore = create<AppState>()(
             currentStreak: persistedState.currentStreak || 0,
             dailyRecords: persistedState.dailyRecords || [],
             customTasks: persistedState.customTasks || [],
+            taskTemplates: persistedState.taskTemplates || [],
             ...migratedState
           };
         }
