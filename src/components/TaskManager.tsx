@@ -153,7 +153,6 @@ export const TaskManager: React.FC = () => {
           {/* 任务模板列表 */}
           {activeTemplates.length > 0 && (
             <div>
-              <h3 className="text-lg font-semibold text-gray-700 mb-3">任务模板</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {activeTemplates.map((template) => (
                   <div
