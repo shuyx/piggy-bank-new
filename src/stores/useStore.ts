@@ -58,6 +58,8 @@ export interface AppState {
   getWeeklyStats: () => { totalStars: number; completionRate: number };
   clearTodayTasks: () => void;
   loadFromCloud: (cloudData: any) => void;
+  exportData: () => string;
+  importData: (jsonData: string) => Promise<boolean>;
   
   // 任务模板相关方法
   saveTaskTemplate: (name: string, category: Task['category'], stars: number) => void;
@@ -797,6 +799,149 @@ export const useStore = create<AppState>()(
 
       getDeletedTaskTemplates: () => {
         return get().taskTemplates.filter(t => t.isDeleted);
+      },
+
+      exportData: () => {
+        const state = get();
+        
+        // 计算统计信息
+        const totalDays = state.dailyRecords.length;
+        const totalTasks = state.dailyRecords.reduce((sum, record) => sum + record.tasks.length, 0);
+        const totalCompletedTasks = state.dailyRecords.reduce((sum, record) => 
+          sum + record.tasks.filter(t => t.completed).length, 0);
+        const averageStarsPerDay = totalDays > 0 ? state.totalStars / totalDays : 0;
+        
+        // 计算每月统计
+        const monthlyStats: { [key: string]: { stars: number; tasks: number; completedTasks: number } } = {};
+        state.dailyRecords.forEach(record => {
+          const month = record.date.substring(0, 7); // YYYY-MM
+          if (!monthlyStats[month]) {
+            monthlyStats[month] = { stars: 0, tasks: 0, completedTasks: 0 };
+          }
+          monthlyStats[month].stars += record.totalStars;
+          monthlyStats[month].tasks += record.tasks.length;
+          monthlyStats[month].completedTasks += record.tasks.filter(t => t.completed).length;
+        });
+        
+        // 计算每周统计（最近几周）
+        const weeklyStats: { [key: string]: { stars: number; tasks: number; completedTasks: number } } = {};
+        const today = new Date();
+        for (let i = 0; i < 12; i++) { // 最近12周
+          const weekStart = new Date(today);
+          weekStart.setDate(today.getDate() - (today.getDay() + 7 * i));
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekStart.getDate() + 6);
+          
+          const weekKey = `${weekStart.toISOString().split('T')[0]}_${weekEnd.toISOString().split('T')[0]}`;
+          weeklyStats[weekKey] = { stars: 0, tasks: 0, completedTasks: 0 };
+          
+          state.dailyRecords.forEach(record => {
+            const recordDate = new Date(record.date);
+            if (recordDate >= weekStart && recordDate <= weekEnd) {
+              weeklyStats[weekKey].stars += record.totalStars;
+              weeklyStats[weekKey].tasks += record.tasks.length;
+              weeklyStats[weekKey].completedTasks += record.tasks.filter(t => t.completed).length;
+            }
+          });
+        }
+        
+        const exportData = {
+          exportDate: new Date().toISOString().split('T')[0],
+          exportTime: new Date().toISOString(),
+          version: "1.0",
+          totalStars: state.totalStars,
+          currentStreak: state.currentStreak,
+          dailyRecords: state.dailyRecords,
+          achievements: state.achievements,
+          taskTemplates: state.taskTemplates,
+          statistics: {
+            totalDays,
+            totalTasks,
+            totalCompletedTasks,
+            averageStarsPerDay: Math.round(averageStarsPerDay * 100) / 100,
+            completionRate: totalTasks > 0 ? Math.round((totalCompletedTasks / totalTasks) * 10000) / 100 : 0,
+            weeklyStats,
+            monthlyStats
+          }
+        };
+        
+        return JSON.stringify(exportData, null, 2);
+      },
+
+      importData: async (jsonData: string) => {
+        try {
+          const importedData = JSON.parse(jsonData);
+          
+          // 验证数据格式
+          if (!importedData.version || !importedData.exportDate) {
+            throw new Error('无效的数据格式');
+          }
+          
+          // 验证必要字段
+          const requiredFields = ['totalStars', 'currentStreak', 'dailyRecords', 'achievements'];
+          for (const field of requiredFields) {
+            if (!(field in importedData)) {
+              throw new Error(`缺少必要字段: ${field}`);
+            }
+          }
+          
+          // 验证数据类型
+          if (typeof importedData.totalStars !== 'number' || importedData.totalStars < 0) {
+            throw new Error('totalStars 必须是非负数');
+          }
+          
+          if (typeof importedData.currentStreak !== 'number' || importedData.currentStreak < 0) {
+            throw new Error('currentStreak 必须是非负数');
+          }
+          
+          if (!Array.isArray(importedData.dailyRecords)) {
+            throw new Error('dailyRecords 必须是数组');
+          }
+          
+          if (!Array.isArray(importedData.achievements)) {
+            throw new Error('achievements 必须是数组');
+          }
+          
+          // 验证dailyRecords格式
+          for (const record of importedData.dailyRecords) {
+            if (!record.date || !Array.isArray(record.tasks) || typeof record.totalStars !== 'number') {
+              throw new Error('dailyRecords 格式不正确');
+            }
+          }
+          
+          // 验证achievements格式
+          for (const achievement of importedData.achievements) {
+            if (!achievement.id || !achievement.name || typeof achievement.unlocked !== 'boolean') {
+              throw new Error('achievements 格式不正确');
+            }
+          }
+          
+          // 合并成就数据（保留当前版本的成就定义，只恢复解锁状态）
+          const currentAchievements = get().achievements;
+          const mergedAchievements = currentAchievements.map(currentAch => {
+            const importedAch = importedData.achievements.find((a: Achievement) => a.id === currentAch.id);
+            if (importedAch && importedAch.unlocked) {
+              return { ...currentAch, unlocked: true, unlockedDate: importedAch.unlockedDate };
+            }
+            return currentAch;
+          });
+          
+          // 更新状态
+          set({
+            totalStars: importedData.totalStars,
+            currentStreak: importedData.currentStreak,
+            dailyRecords: importedData.dailyRecords,
+            achievements: mergedAchievements,
+            taskTemplates: importedData.taskTemplates || []
+          });
+          
+          console.log('数据导入成功');
+          return true;
+          
+        } catch (error) {
+          console.error('数据导入失败:', error);
+          return false;
+        }
       }
     }),
     {
