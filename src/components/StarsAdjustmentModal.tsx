@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../stores/useStore';
+import { useDialog } from '../contexts/DialogContext';
 
 interface StarsAdjustmentModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ export const StarsAdjustmentModal: React.FC<StarsAdjustmentModalProps> = ({
   onClose
 }) => {
   const { totalStars, adjustTotalStars } = useStore();
+  const { showSuccess } = useDialog();
   const [newStars, setNewStars] = useState(totalStars.toString());
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -41,9 +43,11 @@ export const StarsAdjustmentModal: React.FC<StarsAdjustmentModalProps> = ({
       adjustTotalStars(starsValue);
       
       // 显示成功消息
-      setTimeout(() => {
-        alert(`✅ 总星星数已调整为 ${starsValue}\n${starsValue > totalStars ? '🎉 恭喜！可能解锁了新成就，请查看成就徽章！' : '📝 星星数已更新完毕'}`);
-      }, 100);
+      showSuccess(
+        `总星星数已调整为 ${starsValue}\n${starsValue > totalStars ? '🎉 恭喜！可能解锁了新成就，请查看成就徽章！' : '📝 星星数已更新完毕'}`,
+        '调整成功',
+        3000
+      );
       
       handleClose();
       

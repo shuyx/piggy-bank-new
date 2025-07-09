@@ -10,11 +10,13 @@ import { TaskManager } from '../components/TaskManager';
 import { DailyReport } from '../components/DailyReport';
 import { InstallPrompt } from '../components/InstallPrompt';
 import { initializeTodayTasks } from '../stores/useStore';
+import { useDialog } from '../contexts/DialogContext';
 // 暂时注释掉 Supabase 相关导入
 // import { AuthModal } from '../components/AuthModal';
 // import { SyncStatus } from '../components/SyncStatus';
 
 export const HomePage: React.FC = () => {
+  const { showConfirm } = useDialog();
   const {
     totalStars,
     getTodayTasks,
@@ -22,7 +24,7 @@ export const HomePage: React.FC = () => {
     uncompleteTask,
     deleteTask,
     getTodayProgress,
-    getWeeklyStats,
+    // getWeeklyStats, // 暂时未使用
     achievements,
     dailyRecords,
     currentStreak
@@ -35,7 +37,7 @@ export const HomePage: React.FC = () => {
   
   const todayTasks = getTodayTasks();
   const todayProgress = getTodayProgress();
-  const weeklyStats = getWeeklyStats();
+  // const weeklyStats = getWeeklyStats(); // 暂时未使用
   const unlockedCount = achievements.filter(a => a.unlocked).length;
 
   useEffect(() => {
@@ -69,16 +71,20 @@ export const HomePage: React.FC = () => {
   }, [uncompleteTask]);
 
   const handleDeleteTask = useCallback((taskId: string, taskName: string) => {
-    if (window.confirm(`确定要删除任务"${taskName}"吗？`)) {
-      console.log('删除任务:', taskId);
-      
-      try {
-        deleteTask(taskId);
-      } catch (error) {
-        console.error('删除任务时出错:', error);
+    showConfirm(
+      `确定要删除任务"${taskName}"吗？`,
+      '删除确认',
+      () => {
+        console.log('删除任务:', taskId);
+        
+        try {
+          deleteTask(taskId);
+        } catch (error) {
+          console.error('删除任务时出错:', error);
+        }
       }
-    }
-  }, [deleteTask]);
+    );
+  }, [deleteTask, showConfirm]);
 
   // 准备图表数据
   const last7Days = Array.from({ length: 7 }, (_, i) => {

@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useStore } from '../stores/useStore';
 import { PasswordModal } from './PasswordModal';
 import { StarsAdjustmentModal } from './StarsAdjustmentModal';
+import { useDialog } from '../contexts/DialogContext';
 
 export const DailyReport: React.FC = () => {
   const { generateDailyReport, exportData, exportDataAsJSON, importData, hasPassword } = useStore();
+  const { showSuccess, showError } = useDialog();
   const [showReport, setShowReport] = useState(false);
   const [report, setReport] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -37,7 +39,7 @@ export const DailyReport: React.FC = () => {
     } else {
       // 复制到剪贴板
       navigator.clipboard.writeText(report).then(() => {
-        alert('报告已复制到剪贴板！');
+        showSuccess('报告已复制到剪贴板！', '复制成功');
       });
     }
   };
@@ -57,10 +59,10 @@ export const DailyReport: React.FC = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      alert('数据导出成功！可以用 Excel 或其他表格软件打开查看。');
+      showSuccess('数据导出成功！可以用 Excel 或其他表格软件打开查看。', '导出成功');
     } catch (error) {
       console.error('导出失败:', error);
-      alert('导出失败，请重试');
+      showError('导出失败，请重试', '导出失败');
     } finally {
       setIsExporting(false);
     }
@@ -81,10 +83,10 @@ export const DailyReport: React.FC = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      alert('备份文件导出成功！可用于数据恢复。');
+      showSuccess('备份文件导出成功！可用于数据恢复。', '备份成功');
     } catch (error) {
       console.error('导出失败:', error);
-      alert('导出失败，请重试');
+      showError('导出失败，请重试', '导出失败');
     } finally {
       setIsExportingJSON(false);
     }
@@ -105,16 +107,16 @@ export const DailyReport: React.FC = () => {
         const success = await importData(text);
         
         if (success) {
-          alert('数据导入成功！页面即将刷新。');
+          showSuccess('数据导入成功！页面即将刷新。', '导入成功');
           setTimeout(() => {
             window.location.reload();
           }, 1000);
         } else {
-          alert('数据导入失败，请检查文件格式是否正确。\n提示：导入功能需要 JSON 格式的备份文件。');
+          showError('数据导入失败，请检查文件格式是否正确。\n提示：导入功能需要 JSON 格式的备份文件。', '导入失败');
         }
       } catch (error) {
         console.error('导入失败:', error);
-        alert('导入失败，请检查文件格式是否正确。\n提示：导入功能需要 JSON 格式的备份文件。');
+        showError('导入失败，请检查文件格式是否正确。\n提示：导入功能需要 JSON 格式的备份文件。', '导入失败');
       } finally {
         setIsImporting(false);
       }

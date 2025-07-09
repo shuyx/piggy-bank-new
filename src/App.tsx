@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { HomePage } from './pages/HomePage';
 import { DevTools } from './components/DevTools';
+import { DialogProvider } from './contexts/DialogContext';
 
 function App() {
   useEffect(() => {
@@ -16,12 +17,14 @@ function App() {
   }, []);
 
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-      </Routes>
-      <DevTools />
-    </Router>
+    <DialogProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+        </Routes>
+        <DevTools />
+      </Router>
+    </DialogProvider>
   );
 }
 

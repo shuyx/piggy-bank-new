@@ -906,7 +906,14 @@ export const useStore = create<AppState>()(
             // 创建成就解锁通知
             unlockedToday.forEach(achievement => {
               setTimeout(() => {
-                alert(`🎉 成就解锁！\n${achievement.icon} ${achievement.name}\n${achievement.description}`);
+                // 使用自定义事件通知Dialog系统
+                window.dispatchEvent(new CustomEvent('showAchievementDialog', {
+                  detail: {
+                    title: '成就解锁',
+                    message: `${achievement.icon} ${achievement.name}\n${achievement.description}`,
+                    icon: achievement.icon
+                  }
+                }));
               }, 100);
             });
           }
