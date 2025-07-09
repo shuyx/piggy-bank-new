@@ -11,31 +11,11 @@ export const AchievementBadges: React.FC<AchievementBadgesProps> = ({
   achievements,
   unlockedCount
 }) => {
-  // 动态计算分组，根据屏幕尺寸调整每组数量
-  const getGroupSize = () => {
-    if (typeof window !== 'undefined') {
-      const width = window.innerWidth;
-      if (width < 640) return 6;  // 手机：2x3 布局
-      if (width < 1024) return 8; // 平板：2x4 布局
-      return 10; // PC：2x5 布局
-    }
-    return 6;
-  };
-
-  const [groupSize, setGroupSize] = React.useState(getGroupSize());
+  // 固定显示5个成就徽章
+  const groupSize = 5;
   const [currentGroupIndex, setCurrentGroupIndex] = React.useState(0);
 
-  React.useEffect(() => {
-    const handleResize = () => {
-      setGroupSize(getGroupSize());
-      setCurrentGroupIndex(0); // 重置到第一组
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const achievementGroups = [];
+  const achievementGroups: Achievement[][] = [];
   for (let i = 0; i < achievements.length; i += groupSize) {
     achievementGroups.push(achievements.slice(i, i + groupSize));
   }
@@ -81,36 +61,45 @@ export const AchievementBadges: React.FC<AchievementBadgesProps> = ({
           </>
         )}
 
-        {/* 响应式网格布局 */}
-        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 p-1 sm:p-2">
-          {achievementGroups[currentGroupIndex]?.map(achievement => (
-            <div
-              key={achievement.id}
-              className={`aspect-square flex flex-col items-center justify-center p-2 sm:p-3 rounded-lg transition-all duration-300 hover:scale-105 ${
-                achievement.unlocked
-                  ? 'bg-yellow-100 scale-105 shadow-md border-2 border-yellow-300'
-                  : 'bg-gray-100 opacity-50 hover:opacity-75'
-              }`}
-            >
-              <div className={`text-2xl sm:text-3xl mb-1 ${achievement.unlocked ? 'animate-pulse' : ''}`}>
-                {achievement.icon}
+        {/* 固定网格布局 */}
+        <div className="grid grid-cols-5 gap-2 sm:gap-3 p-1 sm:p-2 min-h-[120px]">
+          {Array.from({ length: 5 }, (_, index) => {
+            const achievement = achievementGroups[currentGroupIndex]?.[index];
+            return (
+              <div
+                key={achievement?.id || `placeholder-${index}`}
+                className={`aspect-square flex flex-col items-center justify-center p-1 sm:p-2 rounded-lg transition-all duration-300 hover:scale-105 ${
+                  achievement ? (
+                    achievement.unlocked
+                      ? 'bg-yellow-100 scale-105 shadow-md border-2 border-yellow-300'
+                      : 'bg-gray-100 opacity-50 hover:opacity-75'
+                  ) : 'bg-transparent'
+                }`}
+              >
+                {achievement && (
+                  <>
+                    <div className={`text-lg sm:text-2xl mb-1 ${achievement.unlocked ? 'animate-pulse' : ''}`}>
+                      {achievement.icon}
+                    </div>
+                    <h3 className="font-bold text-xs mb-1 text-center leading-tight">
+                      {achievement.name}
+                    </h3>
+                    <p className="text-xs text-gray-600 mb-1 text-center leading-tight line-clamp-2 hidden sm:block">
+                      {achievement.description}
+                    </p>
+                    {achievement.unlocked && achievement.unlockedDate && (
+                      <p className="text-xs text-piggy-green font-medium text-center hidden sm:block">
+                        ✅ {new Date(achievement.unlockedDate).toLocaleDateString('zh-CN')}
+                      </p>
+                    )}
+                    {!achievement.unlocked && (
+                      <p className="text-xs text-gray-400 text-center hidden sm:block">🔒 未解锁</p>
+                    )}
+                  </>
+                )}
               </div>
-              <h3 className="font-bold text-xs sm:text-sm mb-1 text-center leading-tight">
-                {achievement.name}
-              </h3>
-              <p className="text-xs text-gray-600 mb-1 text-center leading-tight line-clamp-2">
-                {achievement.description}
-              </p>
-              {achievement.unlocked && achievement.unlockedDate && (
-                <p className="text-xs text-piggy-green font-medium text-center">
-                  ✅ {new Date(achievement.unlockedDate).toLocaleDateString('zh-CN')}
-                </p>
-              )}
-              {!achievement.unlocked && (
-                <p className="text-xs text-gray-400 text-center">🔒 未解锁</p>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {achievementGroups.length > 1 && (
