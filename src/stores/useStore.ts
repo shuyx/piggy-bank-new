@@ -231,6 +231,15 @@ const checkStarBasedAchievements = (state: any, newTotalStars: number) => {
   return { newAchievements, hasNewUnlock };
 };
 
+// 数据安全检查函数：确保总星星数永不减少
+const validateStarsSafety = (currentStars: number, newStars: number): number => {
+  if (newStars < currentStars) {
+    console.warn(`数据安全警告: 尝试减少总星星数从 ${currentStars} 到 ${newStars}，保持原值以确保永久累计`);
+    return currentStars; // 保持原值，永不减少
+  }
+  return newStars;
+};
+
 // 辅助函数：检查成就解锁条件
 const checkAchievements = (state: any, newTotalStars: number, todayTasks: Task[]) => {
   const newAchievements = [...state.achievements];
@@ -436,8 +445,9 @@ export const useStore = create<AppState>()(
 
           console.log('useStore: 任务完成成功:', completedTaskName, '获得星星:', starsEarned);
 
-          // 更新总星星数
-          const newTotalStars = state.totalStars + starsEarned;
+          // 更新总星星数 - 使用安全检查确保永不减少
+          const proposedTotalStars = state.totalStars + starsEarned;
+          const newTotalStars = validateStarsSafety(state.totalStars, proposedTotalStars);
 
           // 获取今日任务（更新后的）
           const todayRecord = newDailyRecords.find(r => r.date === today);
@@ -497,17 +507,15 @@ export const useStore = create<AppState>()(
         
         set((state) => {
           const today = new Date().toISOString().split('T')[0];
-          let starsLost = 0;
           let taskFound = false;
           let restoredTaskName = '';
 
-          // 更新任务状态
+          // 更新任务状态 - 只改变任务状态，不减少总星星数
           const newDailyRecords = state.dailyRecords.map(record => {
             if (record.date === today) {
               const newTasks = record.tasks.map(task => {
                 if (task.id === taskId && task.completed) {
-                  console.log('useStore: 找到并恢复任务:', task.name, '扣除星星:', task.stars);
-                  starsLost = task.stars;
+                  console.log('useStore: 找到并恢复任务:', task.name, '(总星星数保持不变)');
                   taskFound = true;
                   restoredTaskName = task.name;
                   return { ...task, completed: false };
@@ -529,18 +537,14 @@ export const useStore = create<AppState>()(
             return state;
           }
 
-          console.log('useStore: 任务恢复成功:', restoredTaskName, '扣除星星:', starsLost);
-
-          // 更新总星星数
-          const newTotalStars = Math.max(0, state.totalStars - starsLost);
+          console.log('useStore: 任务恢复成功:', restoredTaskName, '总星星数保持永久累计:', state.totalStars);
 
           // 重新计算连续天数
           const newStreak = calculateStreak(newDailyRecords, state.currentStreak);
 
-          console.log('useStore: 恢复状态更新完成，总星星:', newTotalStars, '连续天数:', newStreak);
-
+          // 保持总星星数不变 - 实现永久累计
           return {
-            totalStars: newTotalStars,
+            totalStars: state.totalStars, // 永不减少
             currentStreak: newStreak,
             dailyRecords: newDailyRecords
           };
@@ -605,14 +609,10 @@ export const useStore = create<AppState>()(
       },
 
       clearTodayTasks: () => {
-        console.log('useStore: 清除今日所有任务');
+        console.log('useStore: 清除今日所有任务 (总星星数保持永久累计)');
         
         set((state) => {
           const today = new Date().toISOString().split('T')[0];
-          
-          // 计算要减少的星星数
-          const todayRecord = state.dailyRecords.find(r => r.date === today);
-          const starsToDeduct = todayRecord?.totalStars || 0;
           
           const newDailyRecords = state.dailyRecords.map(record => {
             if (record.date === today) {
@@ -625,13 +625,12 @@ export const useStore = create<AppState>()(
             return record;
           });
 
-          const newTotalStars = Math.max(0, state.totalStars - starsToDeduct);
           const newStreak = calculateStreak(newDailyRecords, state.currentStreak);
 
-          console.log('useStore: 清除完成，扣除星星:', starsToDeduct, '新总星星:', newTotalStars);
+          console.log('useStore: 清除完成，总星星数保持永久累计:', state.totalStars);
 
           return {
-            totalStars: newTotalStars,
+            totalStars: state.totalStars, // 永不减少
             currentStreak: newStreak,
             dailyRecords: newDailyRecords
           };
@@ -881,6 +880,11 @@ export const useStore = create<AppState>()(
         const state = get();
         const oldTotal = state.totalStars;
         
+        // 管理员调整警告
+        if (newTotal < oldTotal) {
+          console.warn(`⚠️ 管理员操作: 减少总星星数从 ${oldTotal} 到 ${newTotal}`);
+        }
+        
         // 检查基于总星星数的成就
         const { newAchievements, hasNewUnlock } = checkStarBasedAchievements(state, newTotal);
         
@@ -890,7 +894,7 @@ export const useStore = create<AppState>()(
           achievements: newAchievements
         });
         
-        console.log(`总星星数已调整: ${oldTotal} → ${newTotal}`);
+        console.log(`📊 管理员调整总星星数: ${oldTotal} → ${newTotal}`);
         
         // 如果有新成就解锁，显示提示
         if (hasNewUnlock) {
