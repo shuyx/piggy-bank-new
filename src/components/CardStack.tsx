@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, ReactNode, useCallback } from 'react';
+import React, { useState, useRef, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { useSwipeable } from 'react-swipeable';
 import './CardStack.css';
 import '../styles/card-responsive.css';
@@ -25,17 +25,25 @@ export const CardStack: React.FC<CardStackProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
 
   // 创建3x3网格的卡片映射
-  const cardGrid = new Map<string, Card>();
-  cards.forEach(card => {
-    cardGrid.set(`${card.row}-${card.col}`, card);
-  });
+  const cardGrid = useMemo(() => {
+    const grid = new Map<string, Card>();
+    cards.forEach(card => {
+      grid.set(`${card.row}-${card.col}`, card);
+    });
+    return grid;
+  }, [cards]);
 
   const getCurrentCard = () => {
     return cardGrid.get(`${currentPosition.row}-${currentPosition.col}`);
   };
 
   const moveCard = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
-    if (isAnimating) return;
+    console.log(`moveCard called: ${direction}, currentPosition:`, currentPosition, 'isAnimating:', isAnimating);
+    
+    if (isAnimating) {
+      console.log('Animation in progress, skipping move');
+      return;
+    }
 
     const newPosition = { ...currentPosition };
     switch (direction) {
@@ -53,8 +61,14 @@ export const CardStack: React.FC<CardStackProps> = ({
         break;
     }
 
+    console.log('newPosition:', newPosition);
+    
     // 检查目标位置是否有卡片
-    if (cardGrid.has(`${newPosition.row}-${newPosition.col}`)) {
+    const hasCard = cardGrid.has(`${newPosition.row}-${newPosition.col}`);
+    console.log(`Card exists at ${newPosition.row}-${newPosition.col}:`, hasCard);
+    
+    if (hasCard) {
+      console.log('Moving to new position');
       setIsAnimating(true);
       setCurrentPosition(newPosition);
       setTimeout(() => setIsAnimating(false), 300);
@@ -63,17 +77,40 @@ export const CardStack: React.FC<CardStackProps> = ({
       if ('vibrate' in navigator) {
         navigator.vibrate(10);
       }
+    } else {
+      console.log('No card at target position');
     }
   }, [currentPosition, isAnimating, cardGrid]);
 
   const handlers = useSwipeable({
-    onSwipedUp: () => moveCard('up'),
-    onSwipedDown: () => moveCard('down'),
-    onSwipedLeft: () => moveCard('left'),
-    onSwipedRight: () => moveCard('right'),
+    onSwipedUp: () => {
+      console.log('Swiped Up');
+      moveCard('up');
+    },
+    onSwipedDown: () => {
+      console.log('Swiped Down');
+      moveCard('down');
+    },
+    onSwipedLeft: () => {
+      console.log('Swiped Left');
+      moveCard('left');
+    },
+    onSwipedRight: () => {
+      console.log('Swiped Right');
+      moveCard('right');
+    },
     preventScrollOnSwipe: true,
     trackMouse: true,
-    delta: 50,
+    trackTouch: true,
+    delta: 20,
+    swipeDuration: 1000,
+    touchEventOptions: { passive: false },
+    onTouchStartOrOnMouseDown: ({ event }) => {
+      console.log('Touch/Mouse started:', event.type);
+    },
+    onTouchEndOrOnMouseUp: ({ event }) => {
+      console.log('Touch/Mouse ended:', event.type);
+    }
   });
 
   // 键盘控制
@@ -187,6 +224,33 @@ export const CardStack: React.FC<CardStackProps> = ({
           </div>
         </div>
       )}
+      
+      {/* 调试按钮 */}
+      <div className="absolute top-20 left-4 z-30 grid grid-cols-3 gap-2">
+        <div></div>
+        <button 
+          onClick={() => moveCard('up')}
+          className="bg-blue-500 text-white w-8 h-8 rounded text-xs"
+        >↑</button>
+        <div></div>
+        <button 
+          onClick={() => moveCard('left')}
+          className="bg-blue-500 text-white w-8 h-8 rounded text-xs"
+        >←</button>
+        <div className="bg-gray-300 w-8 h-8 rounded flex items-center justify-center text-xs">
+          {currentPosition.row},{currentPosition.col}
+        </div>
+        <button 
+          onClick={() => moveCard('right')}
+          className="bg-blue-500 text-white w-8 h-8 rounded text-xs"
+        >→</button>
+        <div></div>
+        <button 
+          onClick={() => moveCard('down')}
+          className="bg-blue-500 text-white w-8 h-8 rounded text-xs"
+        >↓</button>
+        <div></div>
+      </div>
     </div>
   );
 };
