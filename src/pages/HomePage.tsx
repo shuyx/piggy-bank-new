@@ -27,7 +27,8 @@ export const HomePage: React.FC = () => {
     // getWeeklyStats, // 暂时未使用
     achievements,
     dailyRecords,
-    currentStreak
+    currentStreak,
+    syncTotalStarsWithHistory
   } = useStore();
 
   const [celebrationVisible, setCelebrationVisible] = useState(false);
@@ -43,7 +44,9 @@ export const HomePage: React.FC = () => {
 
   useEffect(() => {
     initializeTodayTasks();
-  }, []);
+    // 同步总星星数与历史记录，确保数据一致性
+    syncTotalStarsWithHistory();
+  }, [syncTotalStarsWithHistory]);
 
   // 任务操作处理函数
   const handleCompleteTask = useCallback((taskId: string) => {

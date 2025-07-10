@@ -71,6 +71,9 @@ export interface AppState {
   // 总星星数调整
   adjustTotalStars: (newTotal: number) => void;
   
+  // 数据同步
+  syncTotalStarsWithHistory: () => void;
+  
   // 任务模板相关方法
   saveTaskTemplate: (name: string, category: Task['category'], stars: number) => void;
   deleteTaskTemplate: (templateId: string) => void;
@@ -238,6 +241,11 @@ const validateStarsSafety = (currentStars: number, newStars: number): number => 
     return currentStars; // 保持原值，永不减少
   }
   return newStars;
+};
+
+// 计算历史累计总星星数：基于所有每日记录的totalStars累计
+const calculateTotalStarsFromHistory = (dailyRecords: DailyRecord[]): number => {
+  return dailyRecords.reduce((total, record) => total + record.totalStars, 0);
 };
 
 // 辅助函数：检查成就解锁条件
@@ -445,9 +453,9 @@ export const useStore = create<AppState>()(
 
           console.log('useStore: 任务完成成功:', completedTaskName, '获得星星:', starsEarned);
 
-          // 更新总星星数 - 使用安全检查确保永不减少
-          const proposedTotalStars = state.totalStars + starsEarned;
-          const newTotalStars = validateStarsSafety(state.totalStars, proposedTotalStars);
+          // 重新计算总星星数：基于所有每日记录的累计
+          const calculatedTotalStars = calculateTotalStarsFromHistory(newDailyRecords);
+          const newTotalStars = validateStarsSafety(state.totalStars, calculatedTotalStars);
 
           // 获取今日任务（更新后的）
           const todayRecord = newDailyRecords.find(r => r.date === today);
@@ -851,6 +859,20 @@ export const useStore = create<AppState>()(
 
       getDeletedTaskTemplates: () => {
         return get().taskTemplates.filter(t => t.isDeleted);
+      },
+
+      // 同步总星星数与历史记录
+      syncTotalStarsWithHistory: () => {
+        const state = get();
+        const calculatedTotal = calculateTotalStarsFromHistory(state.dailyRecords);
+        
+        // 只有当计算出的总数大于当前总数时才更新（确保永不减少）
+        if (calculatedTotal > state.totalStars) {
+          console.log(`同步总星星数: ${state.totalStars} → ${calculatedTotal}`);
+          set({ totalStars: calculatedTotal });
+        } else if (calculatedTotal < state.totalStars) {
+          console.warn(`总星星数不一致：历史记录显示${calculatedTotal}，当前显示${state.totalStars}，保持当前值以确保永不减少`);
+        }
       },
 
       // 密码管理
