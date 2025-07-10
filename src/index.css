@@ -321,6 +321,63 @@
   animation: shake 0.5s ease-in-out;
 }
 
+/* 磁吸效果 */
+@keyframes magneticPull {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1.1);
+  }
+}
+
+.animate-magnetic {
+  animation: magneticPull 0.2s ease-out;
+}
+
+/* 滑动完成效果 */
+@keyframes swipeComplete {
+  0% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateX(-100%) scale(0.9);
+    opacity: 0;
+  }
+}
+
+.animate-swipe-complete {
+  animation: swipeComplete 0.4s ease-out forwards;
+}
+
+/* 滑动恢复效果 */
+@keyframes swipeRestore {
+  0% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateX(100%) scale(0.9);
+    opacity: 0;
+  }
+}
+
+.animate-swipe-restore {
+  animation: swipeRestore 0.4s ease-out forwards;
+}
+
 /* 猪猪存钱罐庆祝动画 */
 @keyframes starFall {
   0% {
