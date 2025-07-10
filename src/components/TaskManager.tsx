@@ -1,6 +1,107 @@
 import React, { useState } from 'react';
 import { useStore } from '../stores/useStore';
 
+// 下拉菜单组件
+interface CategoryDropdownProps {
+  category: string;
+  label: string;
+  icon: string;
+  templates: any[];
+  isOpen: boolean;
+  onToggle: () => void;
+  onAddFromTemplate: (templateId: string) => void;
+  onDeleteTemplate: (templateId: string) => void;
+  getCategoryBgColor: (category: string) => string;
+  getCategoryBorderColor: (category: string) => string;
+}
+
+const CategoryDropdown: React.FC<CategoryDropdownProps> = ({
+  category,
+  label,
+  icon,
+  templates,
+  isOpen,
+  onToggle,
+  onAddFromTemplate,
+  onDeleteTemplate,
+  getCategoryBgColor,
+  getCategoryBorderColor
+}) => {
+  if (templates.length === 0) return null;
+
+  return (
+    <div className={`${getCategoryBgColor(category)} rounded-lg border-2 ${getCategoryBorderColor(category)} overflow-hidden transition-all hover:shadow-md`}>
+      {/* 分类标题头 */}
+      <button
+        onClick={onToggle}
+        className={`w-full px-4 py-3 flex items-center justify-between hover:bg-white hover:bg-opacity-30 transition-all ${getCategoryBgColor(category)}`}
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-lg">{icon}</span>
+          <span className="font-medium text-gray-800">{label}</span>
+          <span className="text-sm px-2 py-1 bg-white bg-opacity-50 rounded-full">
+            {templates.length}
+          </span>
+        </div>
+        <svg 
+          className={`w-5 h-5 text-gray-600 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {/* 下拉内容 */}
+      {isOpen && (
+        <div className="px-3 pb-3 space-y-2 bg-white bg-opacity-30 animate-slideDown">
+          {templates.map((template) => (
+            <div
+              key={template.id}
+              className="bg-white rounded-lg p-3 shadow-sm hover:shadow-md transition-all transform hover:scale-[1.02]"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm font-medium text-gray-800">{template.name}</span>
+                    <span className="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-800">
+                      {template.stars}⭐
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    使用 {template.usageCount} 次
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => onAddFromTemplate(template.id)}
+                    className="p-1.5 text-green-600 hover:bg-green-100 rounded transition-colors"
+                    title="添加到今日任务"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => onDeleteTemplate(template.id)}
+                    className="p-1.5 text-red-600 hover:bg-red-100 rounded transition-colors"
+                    title="删除模板"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const TaskManager: React.FC = () => {
   const { 
     addCustomTask, 
@@ -16,6 +117,14 @@ export const TaskManager: React.FC = () => {
   const [taskStars, setTaskStars] = useState<number | string>(1);
   const [showDeletedTemplates, setShowDeletedTemplates] = useState(false);
   
+  // 下拉菜单状态管理
+  const [categoryDropdowns, setCategoryDropdowns] = useState({
+    study: false,
+    exercise: false,
+    behavior: false,
+    creativity: false
+  });
+  
   const activeTemplates = getActiveTaskTemplates();
   const deletedTemplates = getDeletedTaskTemplates();
 
@@ -29,16 +138,24 @@ export const TaskManager: React.FC = () => {
     }
   };
 
+  // 切换分类下拉菜单状态
+  const toggleCategoryDropdown = (category: 'study' | 'exercise' | 'behavior' | 'creativity') => {
+    setCategoryDropdowns(prev => ({
+      ...prev,
+      [category]: !prev[category]
+    }));
+  };
+
   const categoryOptions = [
-    { value: 'study', label: '📚 学习', color: 'bg-blue-100 text-blue-800', bgColor: 'bg-blue-50', borderColor: 'border-blue-200' },
-    { value: 'exercise', label: '🏃 运动', color: 'bg-green-100 text-green-800', bgColor: 'bg-green-50', borderColor: 'border-green-200' },
-    { value: 'behavior', label: '😊 行为', color: 'bg-amber-100 text-amber-800', bgColor: 'bg-amber-50', borderColor: 'border-amber-200' },
-    { value: 'creativity', label: '🎨 创造', color: 'bg-purple-100 text-purple-800', bgColor: 'bg-purple-50', borderColor: 'border-purple-200' }
+    { value: 'study', label: '学习', icon: '📚', color: 'bg-blue-100 text-blue-800', bgColor: 'bg-blue-50', borderColor: 'border-blue-200' },
+    { value: 'exercise', label: '运动', icon: '🏃', color: 'bg-green-100 text-green-800', bgColor: 'bg-green-50', borderColor: 'border-green-200' },
+    { value: 'behavior', label: '行为', icon: '😊', color: 'bg-amber-100 text-amber-800', bgColor: 'bg-amber-50', borderColor: 'border-amber-200' },
+    { value: 'creativity', label: '创造', icon: '🎨', color: 'bg-purple-100 text-purple-800', bgColor: 'bg-purple-50', borderColor: 'border-purple-200' }
   ];
 
   const getCategoryLabel = (category: string) => {
     const option = categoryOptions.find(opt => opt.value === category);
-    return option ? option.label : category;
+    return option ? `${option.icon} ${option.label}` : category;
   };
 
   const getCategoryBgColor = (category: string) => {
@@ -50,6 +167,12 @@ export const TaskManager: React.FC = () => {
     const option = categoryOptions.find(opt => opt.value === category);
     return option ? option.borderColor : 'border-gray-200';
   };
+
+  // 按分类分组模板
+  const groupedTemplates = categoryOptions.reduce((acc, category) => {
+    acc[category.value] = activeTemplates.filter(template => template.category === category.value);
+    return acc;
+  }, {} as Record<string, any[]>);
 
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow">
@@ -85,7 +208,7 @@ export const TaskManager: React.FC = () => {
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
-                  {option.label}
+                  {option.icon} {option.label}
                 </button>
               ))}
             </div>
@@ -159,52 +282,25 @@ export const TaskManager: React.FC = () => {
       )}
 
       {!showAddTask && (
-        <div className="space-y-6">
-          {/* 任务模板列表 */}
+        <div className="space-y-4">
+          {/* 任务模板分类下拉菜单 */}
           {activeTemplates.length > 0 && (
-            <div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {activeTemplates.map((template) => (
-                  <div
-                    key={template.id}
-                    className={`${getCategoryBgColor(template.category)} rounded-lg p-3 border-2 ${getCategoryBorderColor(template.category)} hover:shadow-md transition-all`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-medium">{template.name}</span>
-                          <span className="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-800">
-                            {template.stars}⭐
-                          </span>
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {getCategoryLabel(template.category)} • 使用 {template.usageCount} 次
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => addTaskFromTemplate(template.id)}
-                          className="p-1 text-green-600 hover:bg-green-100 rounded transition-colors"
-                          title="添加到今日任务"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => deleteTaskTemplate(template.id)}
-                          className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
-                          title="删除模板"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            <div className="space-y-3">
+              {categoryOptions.map((category) => (
+                <CategoryDropdown
+                  key={category.value}
+                  category={category.value}
+                  label={category.label}
+                  icon={category.icon}
+                  templates={groupedTemplates[category.value] || []}
+                  isOpen={categoryDropdowns[category.value as keyof typeof categoryDropdowns]}
+                  onToggle={() => toggleCategoryDropdown(category.value as any)}
+                  onAddFromTemplate={addTaskFromTemplate}
+                  onDeleteTemplate={deleteTaskTemplate}
+                  getCategoryBgColor={getCategoryBgColor}
+                  getCategoryBorderColor={getCategoryBorderColor}
+                />
+              ))}
             </div>
           )}
 
@@ -256,8 +352,9 @@ export const TaskManager: React.FC = () => {
           {/* 空状态 */}
           {activeTemplates.length === 0 && (
             <div className="text-center text-gray-500 py-8">
-              <div className="text-4xl mb-2">✨</div>
-              <div>点击"添加任务"创建自定义任务</div>
+              <div className="text-4xl mb-3 animate-float">📝</div>
+              <div className="text-lg font-medium mb-2">暂无任务模板</div>
+              <div className="text-sm">点击"添加任务"创建第一个自定义任务模板</div>
             </div>
           )}
         </div>
