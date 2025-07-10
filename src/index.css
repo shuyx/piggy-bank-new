@@ -243,6 +243,79 @@
   background: #e91e63;
 }
 
+/* 移动端友好的滚动条 - 专为手指拖动优化 */
+.mobile-scrollbar::-webkit-scrollbar {
+  width: 12px; /* 更宽的滚动条，便于手指操作 */
+}
+
+.mobile-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  margin: 8px 0; /* 上下留边距，避免滚动条顶到头 */
+}
+
+.mobile-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #FF69B4, #e91e63);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: content-box; /* 让边框透明，增加点击区域 */
+  min-height: 40px; /* 最小高度40px，便于拖拽 */
+  transition: all 0.3s ease;
+}
+
+.mobile-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #e91e63, #c2185b);
+  transform: scale(1.1);
+}
+
+.mobile-scrollbar::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(135deg, #c2185b, #ad1457);
+  transform: scale(1.2);
+}
+
+/* 移动端滚动条容器优化 */
+.mobile-scroll-container {
+  /* 在移动端增加右侧padding，给滚动条留出空间 */
+  padding-right: 8px;
+  /* 优化触摸滚动 */
+  -webkit-overflow-scrolling: touch;
+  /* 启用硬件加速 */
+  transform: translateZ(0);
+  /* 改善滚动性能 */
+  will-change: scroll-position;
+}
+
+@media (max-width: 768px) {
+  .mobile-scroll-container {
+    padding-right: 16px; /* 移动端增加更多空间 */
+  }
+  
+  .mobile-scrollbar::-webkit-scrollbar {
+    width: 14px; /* 移动端进一步加宽 */
+  }
+  
+  .mobile-scrollbar::-webkit-scrollbar-thumb {
+    min-height: 50px; /* 移动端增加最小高度 */
+  }
+}
+
+/* 滚动时的惯性效果优化 */
+.scroll-smooth {
+  scroll-behavior: smooth;
+}
+
+/* 触摸优化 */
+@media (pointer: coarse) {
+  .mobile-scrollbar::-webkit-scrollbar {
+    width: 16px; /* 触摸设备进一步加宽 */
+  }
+  
+  .mobile-scrollbar::-webkit-scrollbar-thumb {
+    min-height: 60px; /* 触摸设备增加最小高度 */
+    border: 3px solid transparent;
+  }
+}
+
 /* 加载动画 */
 @keyframes spin {
   to {

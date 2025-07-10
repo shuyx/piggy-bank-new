@@ -340,10 +340,34 @@ export const TodayTasks: React.FC<TodayTasksProps> = ({
   onUncompleteTask,
   onDeleteTask
 }) => {
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  
   // 计算今日累计星星数（只统计已完成的任务）
   const todayTotalStars = tasks
     .filter(task => task.completed)
     .reduce((total, task) => total + task.stars, 0);
+
+  // 处理滚动事件
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLDivElement;
+    const { scrollTop, scrollHeight, clientHeight } = target;
+    
+    // 计算滚动进度 (0-100)
+    const maxScroll = scrollHeight - clientHeight;
+    const progress = maxScroll > 0 ? (scrollTop / maxScroll) * 100 : 0;
+    setScrollProgress(progress);
+    
+    // 显示滚动状态指示
+    setIsScrolling(true);
+    
+    // 滚动停止后隐藏指示
+    clearTimeout((window as any).scrollTimeout);
+    (window as any).scrollTimeout = setTimeout(() => {
+      setIsScrolling(false);
+    }, 1000);
+  }, []);
   const getCategoryIcon = (category: string) => {
     switch (category) {
       case 'study': return '📚';
@@ -409,27 +433,70 @@ export const TodayTasks: React.FC<TodayTasksProps> = ({
         </div>
       </div>
 
-      <div className="space-y-3 max-h-96 overflow-y-auto custom-scrollbar">
-        {tasks.length === 0 ? (
-          <div className="text-center py-8">
-            <div className="text-6xl mb-4 animate-float">🌟</div>
-            <p className="text-gray-500 text-lg">暂无任务，点击"任务管理"添加新任务！</p>
+      {/* 滚动区域容器 */}
+      <div className="relative">
+        {/* 顶部渐变遮罩 */}
+        {tasks.length > 3 && (
+          <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-white to-transparent z-10 pointer-events-none"></div>
+        )}
+        
+        {/* 滚动内容区域 */}
+        <div 
+          ref={scrollRef}
+          className="space-y-3 max-h-96 overflow-y-auto mobile-scrollbar mobile-scroll-container scroll-smooth"
+          onScroll={handleScroll}
+        >
+          {tasks.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-6xl mb-4 animate-float">🌟</div>
+              <p className="text-gray-500 text-lg">暂无任务，点击"任务管理"添加新任务！</p>
+            </div>
+          ) : (
+            tasks.map((task) => (
+              <SwipeableTaskItem
+                key={task.id}
+                task={task}
+                onCompleteTask={onCompleteTask}
+                onUncompleteTask={onUncompleteTask}
+                onDeleteTask={onDeleteTask}
+                getCategoryIcon={getCategoryIcon}
+                getCategoryColor={getCategoryColor}
+                getCategoryBgColor={getCategoryBgColor}
+                getCategoryBorderColor={getCategoryBorderColor}
+                getCategoryHoverColor={getCategoryHoverColor}
+              />
+            ))
+          )}
+        </div>
+        
+        {/* 底部渐变遮罩 */}
+        {tasks.length > 3 && (
+          <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-white to-transparent z-10 pointer-events-none"></div>
+        )}
+        
+        {/* 滚动进度指示器 */}
+        {tasks.length > 3 && (
+          <div className="absolute right-1 top-0 bottom-0 w-1 bg-gray-200 rounded-full z-20">
+            <div 
+              className={`w-full bg-gradient-to-b from-pink-400 to-pink-600 rounded-full transition-all duration-300 ${
+                isScrolling ? 'opacity-100' : 'opacity-60'
+              }`}
+              style={{ 
+                height: `${Math.max(10, scrollProgress)}%`,
+                transform: `translateY(${scrollProgress * 0.9}%)`
+              }}
+            ></div>
           </div>
-        ) : (
-          tasks.map((task) => (
-            <SwipeableTaskItem
-              key={task.id}
-              task={task}
-              onCompleteTask={onCompleteTask}
-              onUncompleteTask={onUncompleteTask}
-              onDeleteTask={onDeleteTask}
-              getCategoryIcon={getCategoryIcon}
-              getCategoryColor={getCategoryColor}
-              getCategoryBgColor={getCategoryBgColor}
-              getCategoryBorderColor={getCategoryBorderColor}
-              getCategoryHoverColor={getCategoryHoverColor}
-            />
-          ))
+        )}
+        
+        {/* 滚动提示（仅在未滚动且有多个任务时显示） */}
+        {tasks.length > 3 && !isScrolling && scrollProgress === 0 && (
+          <div className="absolute bottom-2 right-2 text-xs text-gray-400 bg-white bg-opacity-80 px-2 py-1 rounded-full z-20 pointer-events-none animate-pulse">
+            <div className="flex items-center gap-1">
+              <span>⬆⬇</span>
+              <span>滑动查看</span>
+            </div>
+          </div>
         )}
       </div>
     </div>
