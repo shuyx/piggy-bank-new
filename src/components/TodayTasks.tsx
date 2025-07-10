@@ -79,7 +79,7 @@ export const TodayTasks: React.FC<TodayTasksProps> = ({
           </div>
         </div>
         <div className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-          📅 {new Date().toLocaleDateString('zh-CN')}
+          📅 {new Date().toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })}
         </div>
       </div>
 
