@@ -91,13 +91,26 @@ export const TodayTasks: React.FC<TodayTasksProps> = ({
               }`}
             >
               {/* 任务标题层 */}
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <span className={`text-xl ${task.completed ? 'grayscale' : ''}`}>
-                    {getCategoryIcon(task.category)}
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`text-lg ${task.completed ? 'grayscale' : ''}`}>
+                  {getCategoryIcon(task.category)}
+                </span>
+                <span className={`font-medium text-sm ${task.completed ? 'line-through text-gray-500' : 'text-gray-800'} flex-1 min-w-0`}>
+                  {task.name}
+                </span>
+              </div>
+              
+              {/* 任务详情层 - 包含标签和按钮 */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs px-2 py-1 rounded border ${getCategoryColor(task.category)}`}>
+                    {task.category === 'study' ? '学习' :
+                     task.category === 'exercise' ? '运动' :
+                     task.category === 'behavior' ? '行为' : '创造'}
                   </span>
-                  <span className={`font-medium text-base ${task.completed ? 'line-through text-gray-500' : 'text-gray-800'} flex-1 min-w-0`}>
-                    {task.name}
+                  <span className="text-xs text-gray-500 flex items-center gap-1">
+                    <span>⭐</span>
+                    <span>{task.stars}</span>
                   </span>
                 </div>
                 
@@ -149,19 +162,6 @@ export const TodayTasks: React.FC<TodayTasksProps> = ({
                     </>
                   )}
                 </div>
-              </div>
-              
-              {/* 任务详情层 */}
-              <div className="flex items-center gap-2 mt-2">
-                <span className={`text-xs px-2 py-1 rounded border ${getCategoryColor(task.category)}`}>
-                  {task.category === 'study' ? '学习' :
-                   task.category === 'exercise' ? '运动' :
-                   task.category === 'behavior' ? '行为' : '创造'}
-                </span>
-                <span className="text-xs text-gray-500 flex items-center gap-1">
-                  <span>⭐</span>
-                  <span>{task.stars}</span>
-                </span>
               </div>
             </div>
           ))
