@@ -76,7 +76,6 @@ export const TodayTasks: React.FC<TodayTasksProps> = ({
           <div className="flex items-center gap-1 bg-gradient-to-r from-yellow-100 to-orange-100 px-3 py-1 rounded-full border border-yellow-200 transition-all duration-300 hover:shadow-md">
             <span className="text-yellow-600 font-bold text-sm animate-pulse">⭐</span>
             <span className="text-yellow-700 font-bold text-sm">{todayTotalStars}</span>
-            <span className="text-xs text-yellow-600 ml-1">今日</span>
           </div>
         </div>
         <div className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
